@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wickt · Live Cricket Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2ec;--card:#fff;--ink:#16221b;--mut:#66756b;--line:#dbe3d8;--acc:#2f6b3f;--live:#c0262d;--board:#0f2a1d;--bi:#eaf5e6;--bm:#8fb59a;--r:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#0c1510;--card:#142019;--ink:#e6efe7;--mut:#8ea496;--line:#223329;--acc:#6fbf86;--board:#07120c;--bi:#eaf5e6}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 "Source Sans 3",system-ui,sans-serif;min-height:100vh;display:grid;grid-template-columns:1fr;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3,.num{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;margin:0;letter-spacing:.2px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--mut);font:600 15px "Source Sans 3",sans-serif;padding:14px 4px;cursor:pointer;border-top:3px solid transparent}
+nav button[aria-selected=true]{color:var(--ink);border-top-color:var(--acc)}
+nav .brand{display:none}
+main{padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;max-width:1100px;width:100%;margin:0 auto}
+header.top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+header.top h1{font-size:30px}header.top small{color:var(--mut)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+section{display:none}section.on{display:block}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.card h3{font-size:22px;margin-bottom:8px}
+.board{background:var(--board);color:var(--bi);border-radius:var(--r);padding:14px 16px;cursor:pointer;border:0;text-align:left;width:100%;font:inherit}
+.board .tag{display:flex;justify-content:space-between;color:var(--bm);font-size:13px;margin-bottom:6px}
+.livedot{color:#ff6b70;font-weight:600}.livedot:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d55;margin-right:6px;animation:p 1.4s infinite}
+@keyframes p{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){.livedot:before{animation:none}}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.board .row{padding:3px 0}.board .tm{font-size:20px;font-family:"Barlow Condensed",sans-serif;font-weight:500}
+.board .sc{font-size:40px;line-height:1}.board .ov{color:var(--bm);font-size:14px;margin-left:6px}
+.board .who{color:var(--bm);font-size:14px;margin-top:8px}.board .who b{color:var(--bi);font-weight:600}
+.balls{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.ball{min-width:28px;height:28px;border-radius:14px;border:1px solid var(--bm);display:grid;place-items:center;font-size:13px;padding:0 6px}
+.ball.w{background:var(--live);border-color:var(--live);color:#fff}.ball.b{background:var(--acc);border-color:var(--acc);color:#fff}
+.empty{color:var(--mut);padding:30px 8px;text-align:center}
+.day{margin-bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.day>button{all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;padding:14px;cursor:pointer;font-weight:600}
+.day>button:focus-visible{outline:3px solid var(--acc);outline-offset:-3px}
+.day .ms{display:none;border-top:1px solid var(--line)}.day.open .ms{display:block}
+.m{all:unset;box-sizing:border-box;display:block;width:100%;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
+.m:last-child{border:0}.m:hover{background:var(--bg)}.m small{color:var(--mut)}
+.bar{display:grid;grid-template-columns:minmax(90px,35%) 1fr 36px;gap:8px;align-items:center;margin:6px 0;font-size:15px}
+.bar i{display:block;height:12px;border-radius:6px;background:var(--acc);min-width:3px}
+.bar span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar b{text-align:right}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px}
+.tile .num{font-size:38px;line-height:1}.tile small{color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600}
+.scroll{overflow-x:auto}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+input[type=search],input[type=date]{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.seg button,.btn{font:600 14px "Source Sans 3",sans-serif;padding:9px 14px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;border-radius:10px}
+.seg button[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+dialog{border:0;border-radius:var(--r);padding:0;width:min(780px,96vw);max-height:92vh;background:var(--bg);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.55)}.dh{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line)}
+.db{padding:14px 16px 20px;display:grid;gap:14px}.res{color:var(--acc);font-weight:600}
+.err{background:#fde8e8;color:#7a1115;border-radius:10px;padding:12px;margin-bottom:12px}
+@media(min-width:900px){
+body{grid-template-columns:220px 1fr;padding-bottom:0}
+nav{position:sticky;top:0;height:100vh;flex-direction:column;border:0;border-right:1px solid var(--line);padding:22px 12px;gap:4px}
+nav .brand{display:block;font:700 34px "Barlow Condensed",sans-serif;padding:0 10px 18px}
+nav button{flex:none;text-align:left;padding:11px 12px;border:0;border-left:3px solid transparent;border-radius:8px}
+nav button[aria-selected=true]{border-left-color:var(--acc);background:var(--bg)}
+main{padding:28px 32px}}
+</style>
+</head>
+<body>
+<nav role="tablist" aria-label="Sections">
+<div class="brand">Wickt</div>
+<button role="tab" data-t="live" aria-selected="true">Live</button>
+<button role="tab" data-t="hist" aria-selected="false">History</button>
+<button role="tab" data-t="dash" aria-selected="false">Dashboard</button>
+<button role="tab" data-t="rank" aria-selected="false">Players</button>
+</nav>
+<main>
+<header class="top"><h1 id="ttl">Live Matches</h1><small id="sync"></small></header>
+<div id="err"></div>
+<section id="live" class="on"><div class="grid" id="liveList"></div></section>
+<section id="hist">
+<div class="tools"><input type="date" id="dateF" aria-label="Filter by date"><button class="btn" id="clr">All dates</button><button class="btn" id="ref">Refresh</button></div>
+<div id="histList"></div></section>
+<section id="dash"><div id="dashBody"></div></section>
+<section id="rank">
+<div class="tools"><input type="search" id="q" placeholder="Search player or team" aria-label="Search players">
+<span class="seg"><button data-s="r" aria-pressed="true">Runs</button><button data-s="w" aria-pressed="false">Wickets</button></span></div>
+<div class="card scroll"><table id="rankT"></table></div></section>
+</main>
+<dialog id="dlg"><div class="dh"><h2 id="dT">Match</h2><button class="btn" id="dX">Close</button></div><div class="db" id="dB"></div></dialog>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,collection,doc,onSnapshot,getDocs} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ====== 1. PASTE YOUR WEB API KEY HERE (Firebase console > Project settings > Your apps > Web app) ====== */
+const CONFIG={apiKey:"AIzaSyDYemXTio9FnykZWHl27tKVTi7qAMf3wBk",authDomain:"cricketscorer-beefb.firebaseapp.com",projectId:"cricketscorer-beefb",appId:"1:44551669335:android:9994862be93d71c2ac4512"};
+/* =========================================================================================================== */
+
+const db=getFirestore(initializeApp(CONFIG));
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const overs=b=>Math.floor(b/6)+"."+b%6;
+const key=(n,t)=>String(n||"").trim().toLowerCase()+"|"+String(t||"").trim().toLowerCase();
+const fail=e=>{$("#err").innerHTML='<div class="err">Could not load data: '+esc(e.message||e)+'</div>'};
+const LIVE_MS=12*3600*1000;
+let liveDocs=[],matches=[],merges=[],sortBy="r",unsubDetail=null;
+
+/* ---------- tabs ---------- */
+const titles={live:"Live Matches",hist:"Match History",dash:"Dashboard",rank:"Players"};
+$$("nav [data-t]").forEach(b=>b.onclick=()=>{
+  $$("nav [data-t]").forEach(x=>x.setAttribute("aria-selected",x===b));
+  $$("section").forEach(s=>s.classList.toggle("on",s.id===b.dataset.t));
+  $("#ttl").textContent=titles[b.dataset.t];
+});
+
+/* ---------- parsing ---------- */
+function fromPayload(p){
+  return (p.matches||[]).map(m=>{
+    const inns=(p.innings||[]).filter(i=>i.matchId===m.matchId).sort((a,b)=>a.inningsNumber-b.inningsNumber);
+    const ids=new Set(inns.map(i=>i.inningsId));
+    const balls=(p.ballEvents||[]).filter(b=>ids.has(b.inningsId)).sort((a,b)=>a.ballId-b.ballId);
+    return {m,inns,balls};
+  });
+}
+
+/* ---------- scorecard ---------- */
+const WL={BOWLED:"bowled",CAUGHT:"caught",LBW:"lbw",RUN_OUT:"run out",STUMPED:"stumped",HIT_WICKET:"hit wicket"};
+function card(inn,balls){
+  const bat=new Map(),bowl=new Map();
+  const B=n=>{if(!bat.has(n))bat.set(n,{n,r:0,b:0,f:0,s:0,out:""});return bat.get(n)};
+  const W=n=>{if(!bowl.has(n))bowl.set(n,{n,b:0,r:0,w:0});return bowl.get(n)};
+  for(const x of balls.filter(x=>x.inningsId===inn.inningsId)){
+    const e=x.extraType; if(e==="PENALTY")continue;
+    const hit=e==="NONE"||e==="NO_BALL", st=B(x.strikerName||"Batsman "+x.strikerBatsmanNumber), bw=W(x.bowlerName||"Bowler");
+    if(e!=="WIDE")st.b++;
+    if(hit){st.r+=x.runsScored;if(!x.isOverthrow){if(x.runsScored===4)st.f++;if(x.runsScored===6)st.s++}}
+    if(e==="NONE"||e==="NO_BALL"||e==="WIDE")bw.r+=x.runsScored+x.extraRuns;
+    if(e!=="WIDE"&&e!=="NO_BALL")bw.b++;
+    if(x.isWicket){
+      const o=B(x.dismissedPlayerName||x.strikerName),t=x.wicketType;
+      o.out=(WL[t]||"out")+(t!=="RUN_OUT"?" b "+(x.bowlerName||""):"");
+      if(t!=="RUN_OUT")bw.w++;
+    }
+  }
+  if(inn.totalRuns>0||bat.size){[inn.strikerName,inn.nonStrikerName].forEach(n=>{if(n&&!inn.isCompleted||n&&bat.size)B(n)})}
+  const ex=inn.wideRuns+inn.noBallRuns+inn.byeRuns+inn.legByeRuns+inn.penaltyRuns;
+  const bt=[...bat.values()].map(p=>`<tr><td>${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.out||"not out")}</small></td><td><b>${p.r}</b></td><td>${p.b}</td><td>${p.f}</td><td>${p.s}</td><td>${p.b?(p.r*100/p.b).toFixed(0):"-"}</td></tr>`).join("");
+  const bo=[...bowl.values()].map(p=>`<tr><td>${esc(p.n)}</td><td>${overs(p.b)}</td><td>${p.r}</td><td><b>${p.w}</b></td><td>${p.b?(p.r*6/p.b).toFixed(1):"-"}</td></tr>`).join("");
+  return `<div class="card"><div class="row"><h3>${esc(inn.battingTeam)}${inn.isSuperOver?" (Super Over)":""}</h3><h3>${inn.totalRuns}/${inn.wickets} <small style="font-weight:500;color:var(--mut)">(${inn.completedOvers}.${inn.ballsThisOver} ov)</small></h3></div>
+  <div class="scroll"><table><tr><th>Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr>${bt}</table></div>
+  <p style="color:var(--mut);margin:8px 0">Extras ${ex} (wd ${inn.wideRuns}, nb ${inn.noBallRuns}, b ${inn.byeRuns}, lb ${inn.legByeRuns}${inn.penaltyRuns?", pen "+inn.penaltyRuns:""})</p>
+  <div class="scroll"><table><tr><th>Bowler</th><th>O</th><th>R</th><th>W</th><th>Econ</th></tr>${bo}</table></div></div>`;
+}
+function matchHTML(x){
+  const {m,inns,balls}=x;
+  return `<div class="res">${esc(m.resultSummary||(m.isCompleted?"Completed":"In progress"))}</div>
+  <small style="color:var(--mut)">${new Date(m.createdAt).toLocaleString()} · ${m.totalOvers} overs · Toss: ${esc(m.tossWinnerTeam)} chose to ${esc(String(m.tossDecision).toLowerCase())}</small>`+inns.map(i=>card(i,balls)).join("");
+}
+function openDialog(title,html){$("#dT").textContent=title;$("#dB").innerHTML=html;if(!$("#dlg").open)$("#dlg").showModal()}
+$("#dX").onclick=()=>$("#dlg").close();
+$("#dlg").addEventListener("close",()=>{if(unsubDetail){unsubDetail();unsubDetail=null}});
+
+/* ---------- live ---------- */
+function ballChip(b){const c=b==="W"?"w":(b==="4"||b==="6")?"b":"";return `<span class="ball ${c}">${esc(b)}</span>`}
+function ago(ms){const s=Math.max(0,(Date.now()-ms)/1000|0);return s<60?"just now":s<3600?(s/60|0)+" min ago":(s/3600|0)+" h ago"}
+function renderLive(){
+  const now=Date.now();
+  const list=liveDocs.filter(d=>!d.isCompleted&&now-d.ms<LIVE_MS).sort((a,b)=>b.ms-a.ms);
+  $("#liveList").innerHTML=list.length?list.map(d=>{
+    const rows=(d.innings||[]).map(i=>`<div class="row"><span class="tm">${esc(i.team)}${i.superOver?" (SO)":""}</span><span><span class="num sc">${i.runs}/${i.wickets}</span><span class="ov">${esc(i.overs)} ov</span></span></div>`).join("")||`<div class="row"><span class="tm">${esc(d.teamA)} v ${esc(d.teamB)}</span></div>`;
+    return `<button class="board" data-c="${esc(d.id)}"><div class="tag"><span class="livedot">LIVE</span><span>${d.totalOvers} overs · ${ago(d.ms)}</span></div>${rows}
+    ${d.target?`<div class="who">Target <b>${d.target}</b></div>`:""}
+    <div class="who">${d.striker?`<b>${esc(d.striker)}*</b> &amp; ${esc(d.nonStriker)} · `:""}${d.bowler?`bowling <b>${esc(d.bowler)}</b>`:""}</div>
+    <div class="balls">${(d.recentBalls||[]).map(ballChip).join("")}</div></button>`}).join(""):`<div class="empty">No match is being scored right now.<br>This page updates by itself when one starts.</div>`;
+  $$("#liveList .board").forEach(b=>b.onclick=()=>openLive(b.dataset.c));
+}
+function openLive(code){
+  openDialog("Live scorecard",'<div class="empty">Loading…</div>');
+  unsubDetail=onSnapshot(doc(db,"liveMatches",code),s=>{
+    if(!s.exists()||!s.data().payload){$("#dB").innerHTML='<div class="empty">Scorecard not available.</div>';return}
+    const x=fromPayload(JSON.parse(s.data().payload))[0];
+    if(x){$("#dT").textContent=x.m.teamAName+" v "+x.m.teamBName;$("#dB").innerHTML=matchHTML(x)}
+  },fail);
+}
+onSnapshot(collection(db,"live_scores"),snap=>{
+  liveDocs=snap.docs.map(d=>{const v=d.data();return {...v,id:d.id,ms:v.updatedAt?.toMillis?.()||Date.now()}});
+  $("#sync").textContent="Updated "+new Date().toLocaleTimeString();renderLive();
+},fail);
+setInterval(renderLive,30000);
+
+/* ---------- history ---------- */
+const dayKey=ms=>{const d=new Date(ms);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function scoreLine(x){return x.inns.filter(i=>!i.isSuperOver).map(i=>`${esc(i.battingTeam)} ${i.totalRuns}/${i.wickets}`).join(" · ")}
+function renderHist(){
+  const f=$("#dateF").value,days=new Map();
+  matches.filter(x=>!f||dayKey(x.m.createdAt)===f).sort((a,b)=>b.m.createdAt-a.m.createdAt)
+    .forEach(x=>{const k=dayKey(x.m.createdAt);if(!days.has(k))days.set(k,[]);days.get(k).push(x)});
+  $("#histList").innerHTML=days.size?[...days].map(([k,list])=>`<div class="day${f?" open":""}"><button aria-expanded="${!!f}"><span>${new Date(k+"T00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span><span style="color:var(--mut)">${list.length} match${list.length>1?"es":""}</span></button><div class="ms">${list.map(x=>`<button class="m" data-i="${matches.indexOf(x)}"><b>${esc(x.m.teamAName)} v ${esc(x.m.teamBName)}</b><br><small>${scoreLine(x)}</small><br><small class="res">${esc(x.m.resultSummary||(x.m.isCompleted?"Completed":"In progress"))}</small></button>`).join("")}</div></div>`).join(""):'<div class="empty">No matches found.</div>';
+  $$("#histList .day>button").forEach(b=>b.onclick=()=>{const d=b.parentElement;d.classList.toggle("open");b.setAttribute("aria-expanded",d.classList.contains("open"))});
+  $$("#histList .m").forEach(b=>b.onclick=()=>{const x=matches[+b.dataset.i];openDialog(x.m.teamAName+" v "+x.m.teamBName,matchHTML(x))});
+}
+$("#dateF").onchange=renderHist;$("#clr").onclick=()=>{$("#dateF").value="";renderHist()};$("#ref").onclick=load;
+
+/* ---------- stats ---------- */
+function compute(){
+  const mp=new Map(merges.map(x=>[key(x.fromName,x.fromTeam),{n:x.toName,t:x.toTeam}]));
+  const T=new Map(),H=new Map(),P=new Map();
+  const team=n=>{const k=n.trim().toLowerCase();if(!T.has(k))T.set(k,{name:n.trim(),p:0,w:0,l:0,t:0,r:0,k:0,f:0,s:0});return T.get(k)};
+  const pl=(n,t)=>{const q=mp.get(key(n,t))||{n,t},k=key(q.n,q.t);if(!P.has(k))P.set(k,{n:String(q.n).trim(),t:q.t,r:0,b:0,f:0,s:0,w:0,m:new Set()});return P.get(k)};
+  let done=0;
+  matches.forEach((x,mi)=>{
+    const reg=x.inns.filter(i=>!i.isSuperOver),so=x.inns.filter(i=>i.isSuperOver);
+    const A=x.m.teamAName,Bn=x.m.teamBName,sum=(l,t)=>l.filter(i=>i.battingTeam===t).reduce((a,i)=>a+i.totalRuns,0);
+    reg.forEach(i=>{const t=team(i.battingTeam);t.r+=i.totalRuns;team(i.bowlingTeam).k+=i.wickets});
+    for(const b of x.balls){
+      const i=reg.find(i=>i.inningsId===b.inningsId);if(!i)continue;
+      const e=b.extraType;if(e==="PENALTY")continue;
+      const st=pl(b.strikerName||"Batsman",i.battingTeam),bw=pl(b.bowlerName||"Bowler",i.bowlingTeam);
+      st.m.add(mi);bw.m.add(mi);
+      if(e!=="WIDE")st.b++;
+      if(e==="NONE"||e==="NO_BALL"){st.r+=b.runsScored;if(!b.isOverthrow){const t=team(i.battingTeam);if(b.runsScored===4){st.f++;t.f++}if(b.runsScored===6){st.s++;t.s++}}}
+      if(b.isWicket&&b.wicketType!=="RUN_OUT")bw.w++;
+    }
+    if(!x.m.isCompleted)return;
+    done++;
+    let ra=sum(reg,A),rb=sum(reg,Bn);
+    if(ra===rb&&so.length){ra=sum(so,A);rb=sum(so,Bn)}
+    const ta=team(A),tb=team(Bn);ta.p++;tb.p++;
+    const hk=[A,Bn].map(s=>s.trim().toLowerCase()).sort().join("|");
+    if(!H.has(hk))H.set(hk,{a:A,b:Bn,p:0,wa:0,wb:0,t:0});
+    const h=H.get(hk);h.p++;
+    if(ra===rb){ta.t++;tb.t++;h.t++}
+    else{const aw=ra>rb;(aw?ta:tb).w++;(aw?tb:ta).l++;
+      if(h.a.trim().toLowerCase()===(aw?A:Bn).trim().toLowerCase())h.wa++;else h.wb++}
+  });
+  return {T:[...T.values()],H:[...H.values()],P:[...P.values()].map(p=>({...p,mat:p.m.size})),done};
+}
+const bars=(rows,unit="")=>{const mx=Math.max(1,...rows.map(r=>r.v));return rows.map(r=>`<div class="bar"><span title="${esc(r.l)}">${esc(r.l)}</span><i style="width:${r.v/mx*100}%"></i><b>${r.v}${unit}</b></div>`).join("")||'<div class="empty">No data yet.</div>'};
+function renderStats(){
+  const {T,H,P,done}=compute();
+  const top=(k,n=10)=>[...P].filter(p=>p[k]>0).sort((a,b)=>b[k]-a[k]).slice(0,n).map(p=>({l:p.n+" ("+p.t+")",v:p[k]}));
+  const tb=(k)=>[...T].sort((a,b)=>b[k]-a[k]).map(t=>({l:t.name,v:t[k]}));
+  $("#dashBody").innerHTML=`<div class="tiles"><div class="card tile"><div class="num">${matches.length}</div><small>Matches</small></div><div class="card tile"><div class="num">${done}</div><small>Completed</small></div><div class="card tile"><div class="num">${T.length}</div><small>Teams</small></div><div class="card tile"><div class="num">${P.length}</div><small>Players</small></div></div>
+  <div class="grid">
+  <div class="card"><h3>Wins</h3>${bars(tb("w"))}</div>
+  <div class="card"><h3>Losses</h3>${bars(tb("l"))}</div>
+  <div class="card"><h3>Runs by team</h3>${bars(tb("r"))}</div>
+  <div class="card"><h3>Wickets by team</h3>${bars(tb("k"))}</div>
+  <div class="card"><h3>Fours by team</h3>${bars(tb("f"))}</div>
+  <div class="card"><h3>Sixes by team</h3>${bars(tb("s"))}</div>
+  <div class="card"><h3>Head to head</h3>${H.length?H.map(h=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(h.a)} v ${esc(h.b)}</span><b>${h.wa}–${h.wb}${h.t?" ("+h.t+" tied)":""}</b></div>`).join(""):'<div class="empty">No completed matches.</div>'}</div>
+  <div class="card"><h3>Top 10 run scorers</h3>${bars(top("r"))}</div>
+  <div class="card"><h3>Top 10 wicket takers</h3>${bars(top("w"))}</div></div>`;
+  renderRank(P);
+}
+function renderRank(P=compute().P){
+  const q=$("#q").value.trim().toLowerCase();
+  const rows=P.filter(p=>!q||(p.n+" "+p.t).toLowerCase().includes(q)).sort((a,b)=>b[sortBy]-a[sortBy]||b.r-a.r).slice(0,100);
+  $("#rankT").innerHTML=`<tr><th>#&nbsp;Player</th><th>Mat</th><th>Runs</th><th>Balls</th><th>SR</th><th>4s</th><th>6s</th><th>Wkts</th></tr>`+rows.map((p,i)=>`<tr><td>${i+1}. ${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.t)}</small></td><td>${p.mat}</td><td>${p.r}</td><td>${p.b}</td><td>${p.b?(p.r*100/p.b).toFixed(0):"-"}</td><td>${p.f}</td><td>${p.s}</td><td>${p.w}</td></tr>`).join("");
+  window._P=P;
+}
+$("#q").oninput=()=>renderRank(window._P);
+$$(".seg button").forEach(b=>b.onclick=()=>{sortBy=b.dataset.s;$$(".seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderRank(window._P)});
+
+/* ---------- load history data ---------- */
+async function load(){
+  $("#err").innerHTML="";
+  try{
+    const [tm,ts]=await Promise.all([getDocs(collection(db,"team_matches")),getDocs(collection(db,"team_squads"))]);
+    const seen=new Map(),mg=new Map();
+    const docs=tm.docs.map(d=>d.data()).sort((a,b)=>(a.updatedAtMillis||0)-(b.updatedAtMillis||0));
+    for(const v of docs){
+      try{const p=JSON.parse(v.payload);
+        fromPayload(p).forEach(x=>seen.set(x.m.createdAt+"|"+key(x.m.teamAName,x.m.teamBName),x));
+        (p.playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m));}catch(e){}
+    }
+    for(const d of ts.docs){try{(JSON.parse(d.data().payload).playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m))}catch(e){}}
+    matches=[...seen.values()];merges=[...mg.values()];
+    renderHist();renderStats();
+  }catch(e){fail(e)}
+}
+load();
+</script>
+</body>
+</html>
