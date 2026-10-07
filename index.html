@@ -5,65 +5,64 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Wickt · Live Cricket Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#eef2ec;--card:#fff;--ink:#16221b;--mut:#66756b;--line:#dbe3d8;--acc:#2f6b3f;--live:#c0262d;--board:#0f2a1d;--bi:#eaf5e6;--bm:#8fb59a;--r:14px}
-@media(prefers-color-scheme:dark){:root{--bg:#0c1510;--card:#142019;--ink:#e6efe7;--mut:#8ea496;--line:#223329;--acc:#6fbf86;--board:#07120c;--bi:#eaf5e6}}
+:root{--bg:#f1f3fa;--card:#fff;--ink:#1b2559;--mut:#7c86ad;--line:#e6e9f5;--acc:#2f22a8;--live:#ff1f1f;--board:#2f22a8;--bi:#fff;--bm:#bdb8f2;--g:#12b76a;--o:#ff9a1f;--p:#5b21d6;--r:14px;--sh:0 6px 24px rgba(40,50,120,.09)}
 *{box-sizing:border-box}html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.45 "Source Sans 3",system-ui,sans-serif;min-height:100vh;display:grid;grid-template-columns:1fr;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
-h1,h2,h3,.num{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;margin:0;letter-spacing:.2px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
-nav button{flex:1;border:0;background:none;color:var(--mut);font:600 15px "Source Sans 3",sans-serif;padding:14px 4px;cursor:pointer;border-top:3px solid transparent}
-nav button[aria-selected=true]{color:var(--ink);border-top-color:var(--acc)}
-nav .brand{display:none}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 Lato,system-ui,sans-serif;min-height:100vh;display:grid;grid-template-columns:1fr;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3,.num{font-family:Lato,sans-serif;font-weight:700;margin:0;letter-spacing:.2px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--acc);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{flex:1;border:0;background:none;color:#c9c5f5;font:700 15px Lato,sans-serif;padding:14px 4px;cursor:pointer;border-top:3px solid transparent}
+nav button[aria-selected=true]{color:#fff;border-top-color:var(--live)}
+nav .brand{display:none;color:#fff;align-items:center;gap:10px}nav .brand:before{content:"";width:26px;height:26px;border-radius:50%;border:5px solid var(--live)}
 main{padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;max-width:1100px;width:100%;margin:0 auto}
-header.top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
-header.top h1{font-size:30px}header.top small{color:var(--mut)}
+header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:22px 20px;border-radius:var(--r);background:linear-gradient(100deg,#e9ecf8,#dfe3f4);flex-wrap:wrap;gap:6px}
+header.top h1{font-size:34px;font-weight:900;color:var(--live)}header.top small{color:var(--mut)}
 button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 section{display:none}section.on{display:block}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.card{background:var(--card);box-shadow:var(--sh);border-radius:var(--r);padding:14px}
 .card h3{font-size:22px;margin-bottom:8px}
-.board{background:var(--board);color:var(--bi);border-radius:var(--r);padding:14px 16px;cursor:pointer;border:0;text-align:left;width:100%;font:inherit}
+.board{background:linear-gradient(135deg,#3a2dc0,#26198a);box-shadow:0 10px 26px rgba(47,34,168,.28);color:var(--bi);border-radius:var(--r);padding:14px 16px;cursor:pointer;border:0;text-align:left;width:100%;font:inherit}
 .board .tag{display:flex;justify-content:space-between;color:var(--bm);font-size:13px;margin-bottom:6px}
-.livedot{color:#ff6b70;font-weight:600}.livedot:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d55;margin-right:6px;animation:p 1.4s infinite}
+.livedot{color:#ff8a8f;font-weight:600}.livedot:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d55;margin-right:6px;animation:p 1.4s infinite}
 @keyframes p{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){.livedot:before{animation:none}}
 .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.board .row{padding:3px 0}.board .tm{font-size:20px;font-family:"Barlow Condensed",sans-serif;font-weight:500}
+.board .row{padding:3px 0}.board .tm{font-size:20px;font-family:Lato,sans-serif;font-weight:500}
 .board .sc{font-size:40px;line-height:1}.board .ov{color:var(--bm);font-size:14px;margin-left:6px}
 .board .who{color:var(--bm);font-size:14px;margin-top:8px}.board .who b{color:var(--bi);font-weight:600}
 .balls{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .ball{min-width:28px;height:28px;border-radius:14px;border:1px solid var(--bm);display:grid;place-items:center;font-size:13px;padding:0 6px}
-.ball.w{background:var(--live);border-color:var(--live);color:#fff}.ball.b{background:var(--acc);border-color:var(--acc);color:#fff}
+.ball.w{background:var(--live);border-color:var(--live);color:#fff}.ball.b{background:var(--g);border-color:var(--g);color:#fff}
 .empty{color:var(--mut);padding:30px 8px;text-align:center}
-.day{margin-bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.day{margin-bottom:10px;background:var(--card);box-shadow:var(--sh);border-radius:var(--r);overflow:hidden}
 .day>button{all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;padding:14px;cursor:pointer;font-weight:600}
 .day>button:focus-visible{outline:3px solid var(--acc);outline-offset:-3px}
 .day .ms{display:none;border-top:1px solid var(--line)}.day.open .ms{display:block}
 .m{all:unset;box-sizing:border-box;display:block;width:100%;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
-.m:last-child{border:0}.m:hover{background:var(--bg)}.m small{color:var(--mut)}
+.m:last-child{border:0}.m:hover{background:var(--bg)}.card h3{color:var(--ink)}.m small{color:var(--mut)}
 .bar{display:grid;grid-template-columns:minmax(90px,35%) 1fr 36px;gap:8px;align-items:center;margin:6px 0;font-size:15px}
-.bar i{display:block;height:12px;border-radius:6px;background:var(--acc);min-width:3px}
+.bar i{display:block;height:12px;border-radius:6px;background:var(--c,var(--acc));min-width:3px}
 .bar span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar b{text-align:right}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px}
-.tile .num{font-size:38px;line-height:1}.tile small{color:var(--mut)}
+.tile .num{font-size:44px;line-height:1;font-weight:900;color:var(--live)}.tile small{color:var(--mut)}
 table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
 th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600}
 .scroll{overflow-x:auto}
 .tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 input[type=search],input[type=date]{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-.seg button,.btn{font:600 14px "Source Sans 3",sans-serif;padding:9px 14px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;border-radius:10px}
+.seg button,.btn{font:600 14px Lato,sans-serif;padding:9px 14px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;border-radius:10px}
 .seg button[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
 dialog{border:0;border-radius:var(--r);padding:0;width:min(780px,96vw);max-height:92vh;background:var(--bg);color:var(--ink)}
 dialog::backdrop{background:rgba(0,0,0,.55)}.dh{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line)}
-.db{padding:14px 16px 20px;display:grid;gap:14px}.res{color:var(--acc);font-weight:600}
+.db{padding:14px 16px 20px;display:grid;gap:14px}.res{color:var(--g);font-weight:700}
 .err{background:#fde8e8;color:#7a1115;border-radius:10px;padding:12px;margin-bottom:12px}
 @media(min-width:900px){
 body{grid-template-columns:220px 1fr;padding-bottom:0}
-nav{position:sticky;top:0;height:100vh;flex-direction:column;border:0;border-right:1px solid var(--line);padding:22px 12px;gap:4px}
-nav .brand{display:block;font:700 34px "Barlow Condensed",sans-serif;padding:0 10px 18px}
-nav button{flex:none;text-align:left;padding:11px 12px;border:0;border-left:3px solid transparent;border-radius:8px}
-nav button[aria-selected=true]{border-left-color:var(--acc);background:var(--bg)}
+nav{position:sticky;top:0;height:100vh;flex-direction:column;padding:22px 0 22px 14px;gap:6px}
+nav .brand{display:flex;font:900 30px Lato,sans-serif;padding:0 10px 22px}
+nav button{flex:none;text-align:left;padding:12px 16px;border:0;border-radius:12px 0 0 12px}
+nav button[aria-selected=true]{background:var(--bg);color:var(--acc)}
 main{padding:28px 32px}}
 </style>
 </head>
@@ -237,22 +236,22 @@ function compute(){
   });
   return {T:[...T.values()],H:[...H.values()],P:[...P.values()].map(p=>({...p,mat:p.m.size})),done};
 }
-const bars=(rows,unit="")=>{const mx=Math.max(1,...rows.map(r=>r.v));return rows.map(r=>`<div class="bar"><span title="${esc(r.l)}">${esc(r.l)}</span><i style="width:${r.v/mx*100}%"></i><b>${r.v}${unit}</b></div>`).join("")||'<div class="empty">No data yet.</div>'};
+const bars=(rows,c="var(--acc)")=>{const mx=Math.max(1,...rows.map(r=>r.v));return rows.map(r=>`<div class="bar"><span title="${esc(r.l)}">${esc(r.l)}</span><i style="width:${r.v/mx*100}%;--c:${c}"></i><b>${r.v}</b></div>`).join("")||'<div class="empty">No data yet.</div>'};
 function renderStats(){
   const {T,H,P,done}=compute();
   const top=(k,n=10)=>[...P].filter(p=>p[k]>0).sort((a,b)=>b[k]-a[k]).slice(0,n).map(p=>({l:p.n+" ("+p.t+")",v:p[k]}));
   const tb=(k)=>[...T].sort((a,b)=>b[k]-a[k]).map(t=>({l:t.name,v:t[k]}));
   $("#dashBody").innerHTML=`<div class="tiles"><div class="card tile"><div class="num">${matches.length}</div><small>Matches</small></div><div class="card tile"><div class="num">${done}</div><small>Completed</small></div><div class="card tile"><div class="num">${T.length}</div><small>Teams</small></div><div class="card tile"><div class="num">${P.length}</div><small>Players</small></div></div>
   <div class="grid">
-  <div class="card"><h3>Wins</h3>${bars(tb("w"))}</div>
-  <div class="card"><h3>Losses</h3>${bars(tb("l"))}</div>
+  <div class="card"><h3>Wins</h3>${bars(tb("w"),"var(--g)")}</div>
+  <div class="card"><h3>Losses</h3>${bars(tb("l"),"var(--live)")}</div>
   <div class="card"><h3>Runs by team</h3>${bars(tb("r"))}</div>
-  <div class="card"><h3>Wickets by team</h3>${bars(tb("k"))}</div>
-  <div class="card"><h3>Fours by team</h3>${bars(tb("f"))}</div>
-  <div class="card"><h3>Sixes by team</h3>${bars(tb("s"))}</div>
+  <div class="card"><h3>Wickets by team</h3>${bars(tb("k"),"var(--p)")}</div>
+  <div class="card"><h3>Fours by team</h3>${bars(tb("f"),"var(--o)")}</div>
+  <div class="card"><h3>Sixes by team</h3>${bars(tb("s"),"var(--live)")}</div>
   <div class="card"><h3>Head to head</h3>${H.length?H.map(h=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(h.a)} v ${esc(h.b)}</span><b>${h.wa}–${h.wb}${h.t?" ("+h.t+" tied)":""}</b></div>`).join(""):'<div class="empty">No completed matches.</div>'}</div>
   <div class="card"><h3>Top 10 run scorers</h3>${bars(top("r"))}</div>
-  <div class="card"><h3>Top 10 wicket takers</h3>${bars(top("w"))}</div></div>`;
+  <div class="card"><h3>Top 10 wicket takers</h3>${bars(top("w"),"var(--p)")}</div></div>`;
   renderRank(P);
 }
 function renderRank(P=compute().P){
