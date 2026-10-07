@@ -3,91 +3,173 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#2f22a8">
 <title>Wickt · Live Cricket Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f1f3fa;--card:#fff;--ink:#1b2559;--mut:#7c86ad;--line:#e6e9f5;--acc:#2f22a8;--live:#ff1f1f;--board:#2f22a8;--bi:#fff;--bm:#bdb8f2;--g:#12b76a;--o:#ff9a1f;--p:#5b21d6;--r:14px;--sh:0 6px 24px rgba(40,50,120,.09)}
+:root{color-scheme:light;
+--bg:#f4f5fb;--card:#fff;--ink:#161b45;--mut:#5a6491;--line:#e3e6f3;--hov:#f1f2fb;
+--acc:#2f22a8;--acc-d:#241a8c;--nav:#2f22a8;
+--live:#e5383b;--g:#12b76a;--gt:#067647;--amber:#f5a524;--six:#7c3aed;--slate:#94a3b8;
+--bi:#fff;--bm:#c4c0f5;--errbg:#fde8e8;--errfg:#7a1115;
+--r:16px;--sh:0 1px 2px rgba(22,27,69,.06),0 8px 24px rgba(22,27,69,.07);
+--disp:"Barlow Condensed",Lato,system-ui,sans-serif}
 *{box-sizing:border-box}html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.45 Lato,system-ui,sans-serif;min-height:100vh;display:grid;grid-template-columns:1fr;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
-h1,h2,h3,.num{font-family:Lato,sans-serif;font-weight:700;margin:0;letter-spacing:.2px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--acc);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
-nav button{flex:1;border:0;background:none;color:#c9c5f5;font:700 15px Lato,sans-serif;padding:14px 4px;cursor:pointer;border-top:3px solid transparent}
-nav button[aria-selected=true]{color:#fff;border-top-color:var(--live)}
-nav .brand{display:none;color:#fff;align-items:center;gap:10px}nav .brand:before{content:"";width:26px;height:26px;border-radius:50%;border:5px solid var(--live)}
-main{padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;max-width:1100px;width:100%;margin:0 auto}
-header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:22px 20px;border-radius:var(--r);background:linear-gradient(100deg,#e9ecf8,#dfe3f4);flex-wrap:wrap;gap:6px}
-header.top h1{font-size:34px;font-weight:900;color:var(--live)}header.top small{color:var(--mut)}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 Lato,system-ui,sans-serif;min-height:100vh;display:grid;grid-template-columns:1fr;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px));-webkit-tap-highlight-color:transparent}
+h1,h2,h3{font-family:Lato,sans-serif;font-weight:700;margin:0;letter-spacing:.2px}
+.num{font-family:var(--disp);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* navigation */
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;gap:4px;background:var(--nav);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav button{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:none;color:#d6d3fa;font:700 12px Lato,sans-serif;padding:8px 4px;min-height:52px;border-radius:14px;cursor:pointer;transition:background .15s,color .15s}
+nav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav button[aria-selected=true]{background:rgba(255,255,255,.18);color:#fff}
+nav button:focus-visible{outline-color:#fff;outline-offset:-3px}
+nav .pip{position:absolute;top:8px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 0 2px var(--nav);animation:p 1.4s infinite}
+nav .pip[hidden]{display:none}
+nav .brand{display:none;color:#fff;align-items:center;gap:10px}
+nav .brand:before{content:"";width:26px;height:26px;border-radius:50%;border:5px solid var(--live)}
+main{padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;max-width:1100px;width:100%;min-width:0;margin:0 auto}
+header.top{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 14px;flex-wrap:wrap;gap:6px}
+header.top h1{font:700 30px/1.1 var(--disp);letter-spacing:.3px;color:var(--ink)}
+header.top small{color:var(--mut)}
 button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 section{display:none}section.on{display:block}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
-.card{background:var(--card);box-shadow:var(--sh);border-radius:var(--r);padding:14px}
-.card h3{font-size:22px;margin-bottom:8px}
-.board{background:linear-gradient(135deg,#3a2dc0,#26198a);box-shadow:0 10px 26px rgba(47,34,168,.28);color:var(--bi);border-radius:var(--r);padding:14px 16px;cursor:pointer;border:0;text-align:left;width:100%;font:inherit}
+
+/* cards */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
+.card{background:var(--card);box-shadow:var(--sh);border-radius:var(--r);padding:16px}
+.card h3{font:700 24px/1.2 var(--disp);letter-spacing:.2px;color:var(--ink);margin-bottom:8px}
+
+/* live scoreboard */
+.board{background:linear-gradient(135deg,#3a2dc0,#1c1370);box-shadow:0 10px 26px rgba(36,26,140,.3);color:var(--bi);border-radius:var(--r);padding:16px;cursor:pointer;border:0;text-align:left;width:100%;font:inherit;transition:transform .15s,box-shadow .15s}
+.board:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(36,26,140,.38)}
+.board.flash{animation:fl .9s ease-out}
+@keyframes fl{0%{box-shadow:0 0 0 0 rgba(245,165,36,.85)}100%{box-shadow:0 0 0 16px rgba(245,165,36,0)}}
 .board .tag{display:flex;justify-content:space-between;color:var(--bm);font-size:13px;margin-bottom:6px}
-.livedot{color:#ff8a8f;font-weight:600}.livedot:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d55;margin-right:6px;animation:p 1.4s infinite}
-@keyframes p{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){.livedot:before{animation:none}}
+.livedot{color:#ff8a8f;font-weight:700}
+.livedot:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d55;margin-right:6px;animation:p 1.4s infinite}
+@keyframes p{50%{opacity:.25}}
 .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.board .row{padding:3px 0}.board .tm{font-size:20px;font-family:Lato,sans-serif;font-weight:500}
-.board .sc{font-size:40px;line-height:1}.board .ov{color:var(--bm);font-size:14px;margin-left:6px}
-.board .who{color:var(--bm);font-size:14px;margin-top:8px}.board .who b{color:var(--bi);font-weight:600}
-.balls{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.ball{min-width:28px;height:28px;border-radius:14px;border:1px solid var(--bm);display:grid;place-items:center;font-size:13px;padding:0 6px}
-.ball.w{background:var(--live);border-color:var(--live);color:#fff}.ball.b{background:var(--g);border-color:var(--g);color:#fff}
+.board .row{padding:3px 0}
+.board .tm{font:700 24px var(--disp);letter-spacing:.3px}
+.board .sc{font-size:46px;line-height:1}
+.board .ov{color:var(--bm);font-size:14px;margin-left:6px}
+.board .who{color:var(--bm);font-size:14px;margin-top:8px}
+.board .who b{color:var(--bi);font-weight:700}
+.balls{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.ball{min-width:30px;height:30px;border-radius:15px;border:1px solid var(--bm);display:grid;place-items:center;font-size:13px;font-weight:700;padding:0 5px}
+.ball.w{background:var(--live);border-color:var(--live);color:#fff}
+.ball.b4{background:var(--g);border-color:var(--g);color:#fff}
+.ball.b6{background:var(--six);border-color:#b79cff;color:#fff}
+.ball.x{background:var(--amber);border-color:var(--amber);color:#1b1b1b}
+.ball.d{opacity:.55}
+
+/* empty + skeleton */
 .empty{color:var(--mut);padding:30px 8px;text-align:center}
+.empty svg{display:block;width:64px;height:64px;margin:0 auto 10px}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:2px}
+.sk{border-radius:12px;background:linear-gradient(90deg,rgba(124,134,173,.15) 25%,rgba(124,134,173,.30) 50%,rgba(124,134,173,.15) 75%);background-size:200% 100%;animation:sh 1.3s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* history */
 .day{margin-bottom:10px;background:var(--card);box-shadow:var(--sh);border-radius:var(--r);overflow:hidden}
-.day>button{all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;padding:14px;cursor:pointer;font-weight:600}
+.day>button{all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;padding:14px 16px;cursor:pointer;font-weight:700}
 .day>button:focus-visible{outline:3px solid var(--acc);outline-offset:-3px}
 .day .ms{display:none;border-top:1px solid var(--line)}.day.open .ms{display:block}
-.m{all:unset;box-sizing:border-box;display:block;width:100%;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
-.m:last-child{border:0}.m:hover{background:var(--bg)}.card h3{color:var(--ink)}.m small{color:var(--mut)}
-.bar{display:grid;grid-template-columns:minmax(90px,35%) 1fr 36px;gap:8px;align-items:center;margin:6px 0;font-size:15px}
-.bar i{display:block;height:12px;border-radius:6px;background:var(--c,var(--acc));min-width:3px}
-.bar span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar b{text-align:right}
+.m{all:unset;box-sizing:border-box;display:block;width:100%;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--line);border-left:4px solid var(--slate)}
+.m.wa{border-left-color:var(--g)}.m.t{border-left-color:var(--amber)}
+.m:last-child{border-bottom:0}
+.m:hover{background:var(--hov)}
+.m:focus-visible{outline:3px solid var(--acc);outline-offset:-3px}
+.m small{color:var(--mut)}
+.m small.res{color:var(--gt);font-weight:700}
+
+/* dashboard */
+.bar{display:grid;grid-template-columns:minmax(90px,35%) 1fr 36px;gap:8px;align-items:center;margin:7px 0;font-size:15px}
+.bar i{display:block;height:10px;border-radius:5px;background:var(--c,var(--acc));min-width:3px}
+.bar span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar b{text-align:right;font-variant-numeric:tabular-nums}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px}
-.tile .num{font-size:44px;line-height:1;font-weight:900;color:var(--live)}.tile small{color:var(--mut)}
-table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600}
+.tile .num{font-size:48px;line-height:1;color:var(--acc)}
+.tile small{color:var(--mut)}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:700;font-size:13px}
 .scroll{overflow-x:auto}
+.scroll th:first-child,.scroll td:first-child{position:sticky;left:0;background:var(--card);z-index:1}
+.card tr:hover td{background:var(--hov)}
+.no{color:var(--gt);font-weight:700}.out{color:var(--mut)}
+#rankT th:nth-child(1),#rankT td:nth-child(1){width:44px;min-width:44px;max-width:44px;padding-left:4px;padding-right:4px;text-align:center}
+#rankT th:nth-child(2),#rankT td:nth-child(2){position:sticky;left:44px;background:var(--card);z-index:1;text-align:left}
+#rankT .hl{font-weight:900;color:var(--ink)}
+#rankT th.hl{color:var(--acc)}
+.rk{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;font-weight:700;font-size:13px}
+.rk.r1{background:var(--amber);color:#1b1b1b}
+
+/* controls */
 .tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-input[type=search],input[type=date]{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-.seg button,.btn{font:600 14px Lato,sans-serif;padding:9px 14px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;border-radius:10px}
+input[type=search],input[type=date]{font:inherit;min-height:44px;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.seg{display:inline-flex;gap:6px}
+.seg button,.btn{font:700 14px Lato,sans-serif;min-height:44px;padding:9px 16px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;border-radius:12px}
 .seg button[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
-dialog{border:0;border-radius:var(--r);padding:0;width:min(780px,96vw);max-height:92vh;background:var(--bg);color:var(--ink)}
-dialog::backdrop{background:rgba(0,0,0,.55)}.dh{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line)}
-.db{padding:14px 16px 20px;display:grid;gap:14px}.res{color:var(--g);font-weight:700}
-.err{background:#fde8e8;color:#7a1115;border-radius:10px;padding:12px;margin-bottom:12px}
+.res{color:var(--gt);font-weight:700}
+.err{background:var(--errbg);color:var(--errfg);border-radius:12px;padding:12px;margin-bottom:12px}
+
+/* dialog */
+dialog{border:0;border-radius:var(--r);padding:0;width:min(780px,96vw);max-height:92vh;background:var(--bg);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+dialog[open]{animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:0}}
+dialog::backdrop{background:rgba(8,10,40,.6)}
+.dh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:2}
+.dh h2{font:700 24px/1.2 var(--disp);letter-spacing:.3px}
+.x{flex:none;width:40px;height:40px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.x svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.db{padding:14px 16px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:14px}
+@media(max-width:600px){dialog{width:100vw;max-width:100vw;max-height:94vh;margin:auto 0 0;border-radius:20px 20px 0 0}}
+
+@media(prefers-reduced-motion:reduce){
+.livedot:before,nav .pip,.sk,.board.flash,dialog[open]{animation:none}
+.board{transition:none}.board:hover{transform:none}}
+
 @media(min-width:900px){
 body{grid-template-columns:220px 1fr;padding-bottom:0}
 nav{position:sticky;top:0;height:100vh;flex-direction:column;padding:22px 0 22px 14px;gap:6px}
-nav .brand{display:flex;font:900 30px Lato,sans-serif;padding:0 10px 22px}
-nav button{flex:none;text-align:left;padding:12px 16px;border:0;border-radius:12px 0 0 12px}
+nav .brand{display:flex;font:700 36px var(--disp);letter-spacing:.5px;padding:0 10px 22px}
+nav button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;font-size:15px;min-height:0;padding:12px 16px;border-radius:12px 0 0 12px}
 nav button[aria-selected=true]{background:var(--bg);color:var(--acc)}
+nav .pip{position:static;margin-left:auto;box-shadow:none}
 main{padding:28px 32px}}
 </style>
 </head>
 <body>
 <nav role="tablist" aria-label="Sections">
 <div class="brand">Wickt</div>
-<button role="tab" data-t="live" aria-selected="true">Live</button>
-<button role="tab" data-t="hist" aria-selected="false">History</button>
-<button role="tab" data-t="dash" aria-selected="false">Dashboard</button>
-<button role="tab" data-t="rank" aria-selected="false">Players</button>
+<button role="tab" data-t="live" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg><span>Live</span><i class="pip" id="livePip" hidden></i></button>
+<button role="tab" data-t="hist" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
+<button role="tab" data-t="dash" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Dashboard</span></button>
+<button role="tab" data-t="rank" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Players</span></button>
 </nav>
 <main>
 <header class="top"><h1 id="ttl">Live Matches</h1><small id="sync"></small></header>
 <div id="err"></div>
-<section id="live" class="on"><div class="grid" id="liveList"></div></section>
+<section id="live" class="on"><div class="grid" id="liveList"><div class="sk" style="height:210px"></div></div></section>
 <section id="hist">
 <div class="tools"><input type="date" id="dateF" aria-label="Filter by date"><button class="btn" id="clr">All dates</button><button class="btn" id="ref">Refresh</button></div>
-<div id="histList"></div></section>
-<section id="dash"><div id="dashBody"></div></section>
+<div id="histList"><div class="sk" style="height:54px;margin-bottom:10px"></div><div class="sk" style="height:54px;margin-bottom:10px"></div><div class="sk" style="height:54px"></div></div></section>
+<section id="dash"><div id="dashBody"><div class="tiles"><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div></div></div></section>
 <section id="rank">
 <div class="tools"><input type="search" id="q" placeholder="Search player or team" aria-label="Search players">
-<span class="seg"><button data-s="r" aria-pressed="true">Runs</button><button data-s="w" aria-pressed="false">Wickets</button></span></div>
-<div class="card scroll"><table id="rankT"></table></div></section>
+<span class="seg"><button data-s="r" aria-pressed="true">Batting</button><button data-s="w" aria-pressed="false">Bowling</button></span></div>
+<div class="card scroll"><div class="sk" id="rankSk" style="height:220px"></div><table id="rankT"></table></div></section>
 </main>
-<dialog id="dlg"><div class="dh"><h2 id="dT">Match</h2><button class="btn" id="dX">Close</button></div><div class="db" id="dB"></div></dialog>
+<dialog id="dlg"><div class="dh"><h2 id="dT">Match</h2><button class="x" id="dX" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="db" id="dB"></div></dialog>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -102,7 +184,11 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const overs=b=>Math.floor(b/6)+"."+b%6;
 const key=(n,t)=>String(n||"").trim().toLowerCase()+"|"+String(t||"").trim().toLowerCase();
-const fail=e=>{$("#err").innerHTML='<div class="err">Could not load data: '+esc(e.message||e)+'</div>'};
+const fail=e=>{
+  $$(".sk").forEach(x=>x.remove());
+  if($("#dlg").open&&!$("#dB").children.length)$("#dB").innerHTML='<div class="empty">Could not load this scorecard.</div>';
+  $("#err").innerHTML='<div class="err">Could not load data: '+esc(e.message||e)+'</div>'};
+const skel=()=>'<div class="sk" style="height:70px"></div><div class="sk" style="height:220px"></div><div class="sk" style="height:160px"></div>';
 const LIVE_MS=12*3600*1000;
 let liveDocs=[],matches=[],merges=[],sortBy="r",unsubDetail=null;
 
@@ -145,7 +231,7 @@ function card(inn,balls){
   }
   if(inn.totalRuns>0||bat.size){[inn.strikerName,inn.nonStrikerName].forEach(n=>{if(n&&!inn.isCompleted||n&&bat.size)B(n)})}
   const ex=inn.wideRuns+inn.noBallRuns+inn.byeRuns+inn.legByeRuns+inn.penaltyRuns;
-  const bt=[...bat.values()].map(p=>`<tr><td>${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.out||"not out")}</small></td><td><b>${p.r}</b></td><td>${p.b}</td><td>${p.f}</td><td>${p.s}</td><td>${p.b?(p.r*100/p.b).toFixed(0):"-"}</td></tr>`).join("");
+  const bt=[...bat.values()].map(p=>`<tr><td>${esc(p.n)}<br><small class="${p.out?"out":"no"}">${esc(p.out||"not out")}</small></td><td><b>${p.r}</b></td><td>${p.b}</td><td>${p.f}</td><td>${p.s}</td><td>${p.b?(p.r*100/p.b).toFixed(0):"-"}</td></tr>`).join("");
   const bo=[...bowl.values()].map(p=>`<tr><td>${esc(p.n)}</td><td>${overs(p.b)}</td><td>${p.r}</td><td><b>${p.w}</b></td><td>${p.b?(p.r*6/p.b).toFixed(1):"-"}</td></tr>`).join("");
   return `<div class="card"><div class="row"><h3>${esc(inn.battingTeam)}${inn.isSuperOver?" (Super Over)":""}</h3><h3>${inn.totalRuns}/${inn.wickets} <small style="font-weight:500;color:var(--mut)">(${inn.completedOvers}.${inn.ballsThisOver} ov)</small></h3></div>
   <div class="scroll"><table><tr><th>Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr>${bt}</table></div>
@@ -162,21 +248,43 @@ $("#dX").onclick=()=>$("#dlg").close();
 $("#dlg").addEventListener("close",()=>{if(unsubDetail){unsubDetail();unsubDetail=null}});
 
 /* ---------- live ---------- */
-function ballChip(b){const c=b==="W"?"w":(b==="4"||b==="6")?"b":"";return `<span class="ball ${c}">${esc(b)}</span>`}
+function ballChip(b){
+  const s=String(b),u=s.toUpperCase();let c="";
+  if(u==="W")c="w";else if(u==="4")c="b4";else if(u==="6")c="b6";
+  else if(u==="0"||u==="."||u==="•")c="d";else if(/WD|NB/.test(u))c="x";
+  return `<span class="ball ${c}">${esc(s)}</span>`}
 function ago(ms){const s=Math.max(0,(Date.now()-ms)/1000|0);return s<60?"just now":s<3600?(s/60|0)+" min ago":(s/3600|0)+" h ago"}
+const EMPTY='<div class="empty"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="var(--slate)"/><path d="M21 9c9 11 9 35 0 46M43 9c-9 11-9 35 0 46" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="4 4"/></svg><b>No live match right now</b>This page updates by itself when scoring starts.</div>';
+const lastScore=new Map();
+function pace(d){
+  const ins=d.innings||[],c=ins[ins.length-1];
+  if(!c||c.superOver)return"";
+  const [o,b]=String(c.overs).split(".").map(Number),balls=(o||0)*6+(b||0),runs=Number(c.runs)||0;
+  if(!balls)return"";
+  const crr=(runs*6/balls).toFixed(2),left=(Number(d.totalOvers)||0)*6-balls,need=(Number(d.target)||0)-runs;
+  if(d.target&&need>0&&left>0)return `<div class="who">Need <b>${need}</b> from <b>${left}</b> balls · CRR ${crr} · RRR <b>${(need*6/left).toFixed(2)}</b></div>`;
+  return `<div class="who">CRR <b>${crr}</b></div>`;
+}
 function renderLive(){
   const now=Date.now();
   const list=liveDocs.filter(d=>!d.isCompleted&&now-d.ms<LIVE_MS).sort((a,b)=>b.ms-a.ms);
+  $("#livePip").hidden=!list.length;
   $("#liveList").innerHTML=list.length?list.map(d=>{
     const rows=(d.innings||[]).map(i=>`<div class="row"><span class="tm">${esc(i.team)}${i.superOver?" (SO)":""}</span><span><span class="num sc">${i.runs}/${i.wickets}</span><span class="ov">${esc(i.overs)} ov</span></span></div>`).join("")||`<div class="row"><span class="tm">${esc(d.teamA)} v ${esc(d.teamB)}</span></div>`;
     return `<button class="board" data-c="${esc(d.id)}"><div class="tag"><span class="livedot">LIVE</span><span>${d.totalOvers} overs · ${ago(d.ms)}</span></div>${rows}
     ${d.target?`<div class="who">Target <b>${d.target}</b></div>`:""}
+    ${pace(d)}
     <div class="who">${d.striker?`<b>${esc(d.striker)}*</b> &amp; ${esc(d.nonStriker)} · `:""}${d.bowler?`bowling <b>${esc(d.bowler)}</b>`:""}</div>
-    <div class="balls">${(d.recentBalls||[]).map(ballChip).join("")}</div></button>`}).join(""):`<div class="empty">No match is being scored right now.<br>This page updates by itself when one starts.</div>`;
+    <div class="balls">${(d.recentBalls||[]).map(ballChip).join("")}</div></button>`}).join(""):EMPTY;
   $$("#liveList .board").forEach(b=>b.onclick=()=>openLive(b.dataset.c));
+  list.forEach(d=>{
+    const k=(d.innings||[]).map(i=>i.runs+"/"+i.wickets).join();
+    if(lastScore.has(d.id)&&lastScore.get(d.id)!==k){const el=$(`#liveList .board[data-c="${CSS.escape(d.id)}"]`);if(el)el.classList.add("flash")}
+    lastScore.set(d.id,k);
+  });
 }
 function openLive(code){
-  openDialog("Live scorecard",'<div class="empty">Loading…</div>');
+  openDialog("Live scorecard",skel());
   unsubDetail=onSnapshot(doc(db,"liveMatches",code),s=>{
     if(!s.exists()||!s.data().payload){$("#dB").innerHTML='<div class="empty">Scorecard not available.</div>';return}
     const x=fromPayload(JSON.parse(s.data().payload))[0];
@@ -191,12 +299,20 @@ setInterval(renderLive,30000);
 
 /* ---------- history ---------- */
 const dayKey=ms=>{const d=new Date(ms);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function winner(x){
+  const m=x.m;if(!m.isCompleted)return null;
+  const reg=x.inns.filter(i=>!i.isSuperOver),so=x.inns.filter(i=>i.isSuperOver);
+  const s=(l,t)=>l.filter(i=>i.battingTeam===t).reduce((a,i)=>a+i.totalRuns,0);
+  let a=s(reg,m.teamAName),b=s(reg,m.teamBName);
+  if(a===b&&so.length){a=s(so,m.teamAName);b=s(so,m.teamBName)}
+  return a===b?"T":a>b?"A":"B";
+}
 function scoreLine(x){return x.inns.filter(i=>!i.isSuperOver).map(i=>`${esc(i.battingTeam)} ${i.totalRuns}/${i.wickets}`).join(" · ")}
 function renderHist(){
   const f=$("#dateF").value,days=new Map();
   matches.filter(x=>!f||dayKey(x.m.createdAt)===f).sort((a,b)=>b.m.createdAt-a.m.createdAt)
     .forEach(x=>{const k=dayKey(x.m.createdAt);if(!days.has(k))days.set(k,[]);days.get(k).push(x)});
-  $("#histList").innerHTML=days.size?[...days].map(([k,list])=>`<div class="day${f?" open":""}"><button aria-expanded="${!!f}"><span>${new Date(k+"T00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span><span style="color:var(--mut)">${list.length} match${list.length>1?"es":""}</span></button><div class="ms">${list.map(x=>`<button class="m" data-i="${matches.indexOf(x)}"><b>${esc(x.m.teamAName)} v ${esc(x.m.teamBName)}</b><br><small>${scoreLine(x)}</small><br><small class="res">${esc(x.m.resultSummary||(x.m.isCompleted?"Completed":"In progress"))}</small></button>`).join("")}</div></div>`).join(""):'<div class="empty">No matches found.</div>';
+  $("#histList").innerHTML=days.size?[...days].map(([k,list])=>`<div class="day${f?" open":""}"><button aria-expanded="${!!f}"><span>${new Date(k+"T00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span><span style="color:var(--mut)">${list.length} match${list.length>1?"es":""}</span></button><div class="ms">${list.map(x=>`<button class="m ${({A:"wa",T:"t"})[winner(x)]||""}" data-i="${matches.indexOf(x)}"><b>${esc(x.m.teamAName)} v ${esc(x.m.teamBName)}</b><br><small>${scoreLine(x)}</small><br><small class="res">${esc(x.m.resultSummary||(x.m.isCompleted?"Completed":"In progress"))}</small></button>`).join("")}</div></div>`).join(""):'<div class="empty">No matches found.</div>';
   $$("#histList .day>button").forEach(b=>b.onclick=()=>{const d=b.parentElement;d.classList.toggle("open");b.setAttribute("aria-expanded",d.classList.contains("open"))});
   $$("#histList .m").forEach(b=>b.onclick=()=>{const x=matches[+b.dataset.i];openDialog(x.m.teamAName+" v "+x.m.teamBName,matchHTML(x))});
 }
@@ -207,7 +323,9 @@ function compute(){
   const mp=new Map(merges.map(x=>[key(x.fromName,x.fromTeam),{n:x.toName,t:x.toTeam}]));
   const T=new Map(),H=new Map(),P=new Map();
   const team=n=>{const k=n.trim().toLowerCase();if(!T.has(k))T.set(k,{name:n.trim(),p:0,w:0,l:0,t:0,r:0,k:0,f:0,s:0});return T.get(k)};
-  const pl=(n,t)=>{const q=mp.get(key(n,t))||{n,t},k=key(q.n,q.t);if(!P.has(k))P.set(k,{n:String(q.n).trim(),t:q.t,r:0,b:0,f:0,s:0,w:0,m:new Set()});return P.get(k)};
+  const pl=(n,t)=>{const q=mp.get(key(n,t))||{n,t},k=key(q.n,q.t);if(!P.has(k))P.set(k,{n:String(q.n).trim(),t:q.t,r:0,b:0,f:0,s:0,w:0,bb:0,br:0,m:new Set(),im:new Map(),bms:new Map()});return P.get(k)};
+  const ie=(p,id)=>{let e=p.im.get(id);if(!e){e={r:0,out:false};p.im.set(id,e)}return e};
+  const bmx=(p,mi)=>{let e=p.bms.get(mi);if(!e){e={w:0,r:0};p.bms.set(mi,e)}return e};
   let done=0;
   matches.forEach((x,mi)=>{
     const reg=x.inns.filter(i=>!i.isSuperOver),so=x.inns.filter(i=>i.isSuperOver);
@@ -218,9 +336,14 @@ function compute(){
       const e=b.extraType;if(e==="PENALTY")continue;
       const st=pl(b.strikerName||"Batsman",i.battingTeam),bw=pl(b.bowlerName||"Bowler",i.bowlingTeam);
       st.m.add(mi);bw.m.add(mi);
-      if(e!=="WIDE")st.b++;
-      if(e==="NONE"||e==="NO_BALL"){st.r+=b.runsScored;if(!b.isOverthrow){const t=team(i.battingTeam);if(b.runsScored===4){st.f++;t.f++}if(b.runsScored===6){st.s++;t.s++}}}
-      if(b.isWicket&&b.wicketType!=="RUN_OUT")bw.w++;
+      if(e!=="WIDE"){st.b++;ie(st,b.inningsId)}
+      if(e==="NONE"||e==="NO_BALL"){st.r+=b.runsScored;ie(st,b.inningsId).r+=b.runsScored;if(!b.isOverthrow){const t=team(i.battingTeam);if(b.runsScored===4){st.f++;t.f++}if(b.runsScored===6){st.s++;t.s++}}}
+      if(e==="NONE"||e==="NO_BALL"||e==="WIDE"){const c=(b.runsScored||0)+(b.extraRuns||0);bw.br+=c;bmx(bw,mi).r+=c}
+      if(e!=="WIDE"&&e!=="NO_BALL")bw.bb++;
+      if(b.isWicket){
+        const o=pl(b.dismissedPlayerName||b.strikerName||"Batsman",i.battingTeam);o.m.add(mi);ie(o,b.inningsId).out=true;
+        if(b.wicketType!=="RUN_OUT"){bw.w++;bmx(bw,mi).w++}
+      }
     }
     if(!x.m.isCompleted)return;
     done++;
@@ -234,7 +357,12 @@ function compute(){
     else{const aw=ra>rb;(aw?ta:tb).w++;(aw?tb:ta).l++;
       if(h.a.trim().toLowerCase()===(aw?A:Bn).trim().toLowerCase())h.wa++;else h.wb++}
   });
-  return {T:[...T.values()],H:[...H.values()],P:[...P.values()].map(p=>({...p,mat:p.m.size})),done};
+  return {T:[...T.values()],H:[...H.values()],P:[...P.values()].map(p=>{
+    const ins=[...p.im.values()];let hs=0,hsNo=false,best=null;
+    ins.forEach(e=>{if(e.r>hs||(e.r===hs&&!e.out)){hs=e.r;hsNo=!e.out}});
+    p.bms.forEach(e=>{if(!best||e.w>best.w||(e.w===best.w&&e.r<best.r))best=e});
+    return {...p,mat:p.m.size,inns:ins.length,hs,hsNo,dis:ins.filter(e=>e.out).length,best};
+  }),done};
 }
 const bars=(rows,c="var(--acc)")=>{const mx=Math.max(1,...rows.map(r=>r.v));return rows.map(r=>`<div class="bar"><span title="${esc(r.l)}">${esc(r.l)}</span><i style="width:${r.v/mx*100}%;--c:${c}"></i><b>${r.v}</b></div>`).join("")||'<div class="empty">No data yet.</div>'};
 function renderStats(){
@@ -244,20 +372,29 @@ function renderStats(){
   $("#dashBody").innerHTML=`<div class="tiles"><div class="card tile"><div class="num">${matches.length}</div><small>Matches</small></div><div class="card tile"><div class="num">${done}</div><small>Completed</small></div><div class="card tile"><div class="num">${T.length}</div><small>Teams</small></div><div class="card tile"><div class="num">${P.length}</div><small>Players</small></div></div>
   <div class="grid">
   <div class="card"><h3>Wins</h3>${bars(tb("w"),"var(--g)")}</div>
-  <div class="card"><h3>Losses</h3>${bars(tb("l"),"var(--live)")}</div>
+  <div class="card"><h3>Losses</h3>${bars(tb("l"),"var(--slate)")}</div>
   <div class="card"><h3>Runs by team</h3>${bars(tb("r"))}</div>
-  <div class="card"><h3>Wickets by team</h3>${bars(tb("k"),"var(--p)")}</div>
-  <div class="card"><h3>Fours by team</h3>${bars(tb("f"),"var(--o)")}</div>
-  <div class="card"><h3>Sixes by team</h3>${bars(tb("s"),"var(--live)")}</div>
+  <div class="card"><h3>Wickets by team</h3>${bars(tb("k"),"var(--live)")}</div>
+  <div class="card"><h3>Fours by team</h3>${bars(tb("f"),"var(--g)")}</div>
+  <div class="card"><h3>Sixes by team</h3>${bars(tb("s"),"var(--six)")}</div>
   <div class="card"><h3>Head to head</h3>${H.length?H.map(h=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(h.a)} v ${esc(h.b)}</span><b>${h.wa}–${h.wb}${h.t?" ("+h.t+" tied)":""}</b></div>`).join(""):'<div class="empty">No completed matches.</div>'}</div>
   <div class="card"><h3>Top 10 run scorers</h3>${bars(top("r"))}</div>
-  <div class="card"><h3>Top 10 wicket takers</h3>${bars(top("w"),"var(--p)")}</div></div>`;
+  <div class="card"><h3>Top 10 wicket takers</h3>${bars(top("w"),"var(--live)")}</div></div>`;
   renderRank(P);
 }
 function renderRank(P=compute().P){
-  const q=$("#q").value.trim().toLowerCase();
-  const rows=P.filter(p=>!q||(p.n+" "+p.t).toLowerCase().includes(q)).sort((a,b)=>b[sortBy]-a[sortBy]||b.r-a.r).slice(0,100);
-  $("#rankT").innerHTML=`<tr><th>#&nbsp;Player</th><th>Mat</th><th>Runs</th><th>Balls</th><th>SR</th><th>4s</th><th>6s</th><th>Wkts</th></tr>`+rows.map((p,i)=>`<tr><td>${i+1}. ${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.t)}</small></td><td>${p.mat}</td><td>${p.r}</td><td>${p.b}</td><td>${p.b?(p.r*100/p.b).toFixed(0):"-"}</td><td>${p.f}</td><td>${p.s}</td><td>${p.w}</td></tr>`).join("");
+  const sk=$("#rankSk");if(sk)sk.remove();
+  const q=$("#q").value.trim().toLowerCase(),bat=sortBy==="r";
+  const econ=p=>p.bb?p.br/p.bb:99;
+  /* [label, value, highlighted] */
+  const cols=bat
+    ?[["Mat",p=>p.mat],["Inns",p=>p.inns],["Runs",p=>p.r,1],["Balls",p=>p.b],["HS",p=>p.hs+(p.hsNo?"*":"")],["Avg",p=>p.dis?(p.r/p.dis).toFixed(1):"-"],["SR",p=>p.b?(p.r*100/p.b).toFixed(0):"-"],["4s",p=>p.f],["6s",p=>p.s]]
+    :[["Mat",p=>p.mat],["Overs",p=>overs(p.bb)],["Runs",p=>p.br],["Wkts",p=>p.w,1],["Best",p=>p.best&&p.best.w?p.best.w+"/"+p.best.r:"-"],["Avg",p=>p.w?(p.br/p.w).toFixed(1):"-"],["Econ",p=>p.bb?(p.br*6/p.bb).toFixed(1):"-"],["SR",p=>p.w?(p.bb/p.w).toFixed(0):"-"]];
+  const rows=P.filter(p=>(bat?p.inns>0:p.bb>0||p.br>0)&&(!q||(p.n+" "+p.t).toLowerCase().includes(q)))
+    .sort(bat?(a,b)=>b.r-a.r||a.b-b.b:(a,b)=>b.w-a.w||econ(a)-econ(b)).slice(0,100);
+  $("#rankT").dataset.s=sortBy;
+  $("#rankT").innerHTML=`<tr><th>#</th><th>Player</th>${cols.map(c=>`<th class="${c[2]?"hl":""}">${c[0]}</th>`).join("")}</tr>`
+    +rows.map((p,i)=>`<tr><td><span class="rk${i===0&&!q?" r1":""}">${i+1}</span></td><td>${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.t)}</small></td>${cols.map(c=>`<td class="${c[2]?"hl":""}">${c[1](p)}</td>`).join("")}</tr>`).join("");
   window._P=P;
 }
 $("#q").oninput=()=>renderRank(window._P);
