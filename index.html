@@ -309,10 +309,10 @@ function winner(x){
 }
 function scoreLine(x){return x.inns.filter(i=>!i.isSuperOver).map(i=>`${esc(i.battingTeam)} ${i.totalRuns}/${i.wickets}`).join(" · ")}
 function renderHist(){
-  const f=$("#dateF").value,days=new Map();
+  const f=$("#dateF").value,days=new Map(),wasOpen=new Set($$("#histList .day.open").map(d=>d.dataset.k));
   matches.filter(x=>!f||dayKey(x.m.createdAt)===f).sort((a,b)=>b.m.createdAt-a.m.createdAt)
     .forEach(x=>{const k=dayKey(x.m.createdAt);if(!days.has(k))days.set(k,[]);days.get(k).push(x)});
-  $("#histList").innerHTML=days.size?[...days].map(([k,list])=>`<div class="day${f?" open":""}"><button aria-expanded="${!!f}"><span>${new Date(k+"T00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span><span style="color:var(--mut)">${list.length} match${list.length>1?"es":""}</span></button><div class="ms">${list.map(x=>`<button class="m ${({A:"wa",T:"t"})[winner(x)]||""}" data-i="${matches.indexOf(x)}"><b>${esc(x.m.teamAName)} v ${esc(x.m.teamBName)}</b><br><small>${scoreLine(x)}</small><br><small class="res">${esc(x.m.resultSummary||(x.m.isCompleted?"Completed":"In progress"))}</small></button>`).join("")}</div></div>`).join(""):'<div class="empty">No matches found.</div>';
+  $("#histList").innerHTML=days.size?[...days].map(([k,list])=>`<div class="day${f||wasOpen.has(k)?" open":""}" data-k="${k}"><button aria-expanded="${!!(f||wasOpen.has(k))}"><span>${new Date(k+"T00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span><span style="color:var(--mut)">${list.length} match${list.length>1?"es":""}</span></button><div class="ms">${list.map(x=>`<button class="m ${({A:"wa",T:"t"})[winner(x)]||""}" data-i="${matches.indexOf(x)}"><b>${esc(x.m.teamAName)} v ${esc(x.m.teamBName)}</b><br><small>${scoreLine(x)}</small><br><small class="res">${esc(x.m.resultSummary||(x.m.isCompleted?"Completed":"In progress"))}</small></button>`).join("")}</div></div>`).join(""):'<div class="empty">No matches found.</div>';
   $$("#histList .day>button").forEach(b=>b.onclick=()=>{const d=b.parentElement;d.classList.toggle("open");b.setAttribute("aria-expanded",d.classList.contains("open"))});
   $$("#histList .m").forEach(b=>b.onclick=()=>{const x=matches[+b.dataset.i];openDialog(x.m.teamAName+" v "+x.m.teamBName,matchHTML(x))});
 }
@@ -400,24 +400,59 @@ function renderRank(P=compute().P){
 $("#q").oninput=()=>renderRank(window._P);
 $$(".seg button").forEach(b=>b.onclick=()=>{sortBy=b.dataset.s;$$(".seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderRank(window._P)});
 
-/* ---------- load history data ---------- */
-async function load(){
-  $("#err").innerHTML="";
-  try{
-    const [tm,ts]=await Promise.all([getDocs(collection(db,"team_matches")),getDocs(collection(db,"team_squads"))]);
-    const seen=new Map(),mg=new Map();
-    const docs=tm.docs.map(d=>d.data()).sort((a,b)=>(a.updatedAtMillis||0)-(b.updatedAtMillis||0));
-    for(const v of docs){
-      try{const p=JSON.parse(v.payload);
-        fromPayload(p).forEach(x=>seen.set(x.m.createdAt+"|"+key(x.m.teamAName,x.m.teamBName),x));
-        (p.playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m));}catch(e){}
-    }
-    for(const d of ts.docs){try{(JSON.parse(d.data().payload).playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m))}catch(e){}}
-    matches=[...seen.values()];merges=[...mg.values()];
-    renderHist();renderStats();
-  }catch(e){fail(e)}
+/* ---------- history data (live) ----------
+   History is built from three Firestore sources and kept up to date by listeners, so a finished
+   match / 2nd-innings score shows up without pressing Refresh:
+     team_matches  - published copies of every match (survives rooms being reused)
+     liveMatches   - the room's current match, written on every ball (fresher than team_matches)
+     team_squads   - player merges
+   For the same match (createdAt + teams) the copy with the newest update time wins. */
+const src={team:new Map(),live:new Map(),squads:new Map()},parsed=new Map();
+const ms=(v,...f)=>{for(const k of f){const x=v[k];if(x&&typeof x.toMillis==="function")return x.toMillis();if(typeof x==="number")return x}return 0};
+function parse(id,v,ts){
+  const ck=id+"|"+ts;let r=parsed.get(ck);
+  if(r===undefined){try{r=JSON.parse(v.payload)}catch(e){r=null}parsed.set(ck,r)}
+  return r;
 }
-load();
+function rebuild(){
+  const seen=new Map(),mg=new Map(),all=[];
+  for(const [id,e] of src.team)all.push({id:"t"+id,...e});
+  for(const [id,e] of src.live)all.push({id:"l"+id,...e});
+  all.sort((a,b)=>a.ts-b.ts);
+  for(const e of all){
+    const p=parse(e.id,e.v,e.ts);if(!p)continue;
+    fromPayload(p).forEach(x=>{
+      /* a match with no balls yet has nothing to show; never let it replace a scored copy */
+      if(!x.balls.length&&seen.has(x.m.createdAt+"|"+key(x.m.teamAName,x.m.teamBName)))return;
+      seen.set(x.m.createdAt+"|"+key(x.m.teamAName,x.m.teamBName),x);
+    });
+    (p.playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m));
+  }
+  for(const [id,e] of src.squads){const p=parse("s"+id,e.v,e.ts);if(p)(p.playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m))}
+  matches=[...seen.values()].filter(x=>x.balls.length||x.m.isCompleted);merges=[...mg.values()];
+  $$(".sk").forEach(x=>{if(!x.closest("#liveList"))x.remove()});
+  renderHist();renderStats();
+}
+let rbT=0;const soon=()=>{clearTimeout(rbT);rbT=setTimeout(rebuild,250)};
+function listen(name,map,tsFields){
+  onSnapshot(collection(db,name),snap=>{
+    map.clear();
+    snap.docs.forEach(d=>{const v=d.data();if(typeof v.payload==="string")map.set(d.id,{v,ts:ms(v,...tsFields)||Date.now()})});
+    $("#err").innerHTML="";soon();
+  },fail);
+}
+function load(){ /* Refresh button: re-run the merge; listeners already deliver server updates */
+  $("#err").innerHTML="";
+  Promise.all([getDocs(collection(db,"team_matches")),getDocs(collection(db,"liveMatches"))]).then(([a,b])=>{
+    src.team.clear();src.live.clear();
+    a.docs.forEach(d=>{const v=d.data();if(typeof v.payload==="string")src.team.set(d.id,{v,ts:ms(v,"updatedAtMillis","updatedAt")||Date.now()})});
+    b.docs.forEach(d=>{const v=d.data();if(typeof v.payload==="string")src.live.set(d.id,{v,ts:ms(v,"updatedAt")||Date.now()})});
+    rebuild();
+  }).catch(fail);
+}
+listen("team_matches",src.team,["updatedAtMillis","updatedAt"]);
+listen("liveMatches",src.live,["updatedAt"]);
+listen("team_squads",src.squads,["updatedAtMillis","updatedAt"]);
 </script>
 </body>
 </html>
