@@ -88,6 +88,15 @@ section{display:none}section.on{display:block}
 .m small{color:var(--mut)}
 .m small.res{color:var(--gt);font-weight:700}
 
+/* admin */
+.mw{position:relative;border-bottom:1px solid var(--line)}.mw:last-child{border-bottom:0}
+.mw .m{border-bottom:0;padding-right:96px}
+.del{position:absolute;top:50%;right:12px;transform:translateY(-50%);font:700 13px Lato,sans-serif;min-height:36px;padding:6px 12px;border-radius:10px;border:1px solid #f2b8b5;background:#fff;color:var(--live);cursor:pointer}
+.del:hover{background:var(--errbg)}
+.btn.adm[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.fld{display:grid;gap:10px}.fld input{font:inherit;min-height:44px;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.fld .msg{color:var(--live);min-height:1.2em}
+
 /* dashboard */
 .bar{display:grid;grid-template-columns:minmax(90px,35%) 1fr 36px;gap:8px;align-items:center;margin:7px 0;font-size:15px}
 .bar i{display:block;height:10px;border-radius:5px;background:var(--c,var(--acc));min-width:3px}
@@ -161,19 +170,20 @@ main{padding:28px 32px}}
 <div id="err"></div>
 <section id="live" class="on"><div class="grid" id="liveList"><div class="sk" style="height:210px"></div></div></section>
 <section id="hist">
-<div class="tools"><input type="date" id="dateF" aria-label="Filter by date"><button class="btn" id="clr">All dates</button><button class="btn" id="ref">Refresh</button></div>
+<div class="tools"><input type="date" id="dateF" aria-label="Filter by date"><button class="btn" id="clr">All dates</button><button class="btn" id="ref">Refresh</button><button class="btn adm" id="adm" aria-pressed="false">Admin</button></div>
 <div id="histList"><div class="sk" style="height:54px;margin-bottom:10px"></div><div class="sk" style="height:54px;margin-bottom:10px"></div><div class="sk" style="height:54px"></div></div></section>
 <section id="dash"><div id="dashBody"><div class="tiles"><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div></div></div></section>
 <section id="rank">
 <div class="tools"><input type="search" id="q" placeholder="Search player or team" aria-label="Search players">
-<span class="seg"><button data-s="r" aria-pressed="true">Batting</button><button data-s="w" aria-pressed="false">Bowling</button></span></div>
+<span class="seg"><button data-s="r" aria-pressed="true">Batting</button><button data-s="w" aria-pressed="false">Bowling</button><button data-s="a" aria-pressed="false">All-rounders</button></span></div>
+<div id="rankNote" class="mut" style="display:none;color:var(--mut);font-size:13px;margin:0 2px 10px"></div>
 <div class="card scroll"><div class="sk" id="rankSk" style="height:220px"></div><table id="rankT"></table></div></section>
 </main>
 <dialog id="dlg"><div class="dh"><h2 id="dT">Match</h2><button class="x" id="dX" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="db" id="dB"></div></dialog>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,doc,onSnapshot,getDocs} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,collection,doc,onSnapshot,getDocs,deleteDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ====== 1. PASTE YOUR WEB API KEY HERE (Firebase console > Project settings > Your apps > Web app) ====== */
 const CONFIG={apiKey:"AIzaSyDYemXTio9FnykZWHl27tKVTi7qAMf3wBk",authDomain:"cricketscorer-beefb.firebaseapp.com",projectId:"cricketscorer-beefb",appId:"1:44551669335:android:9994862be93d71c2ac4512"};
@@ -312,9 +322,38 @@ function renderHist(){
   const f=$("#dateF").value,days=new Map(),wasOpen=new Set($$("#histList .day.open").map(d=>d.dataset.k));
   matches.filter(x=>!f||dayKey(x.m.createdAt)===f).sort((a,b)=>b.m.createdAt-a.m.createdAt)
     .forEach(x=>{const k=dayKey(x.m.createdAt);if(!days.has(k))days.set(k,[]);days.get(k).push(x)});
-  $("#histList").innerHTML=days.size?[...days].map(([k,list])=>`<div class="day${f||wasOpen.has(k)?" open":""}" data-k="${k}"><button aria-expanded="${!!(f||wasOpen.has(k))}"><span>${new Date(k+"T00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span><span style="color:var(--mut)">${list.length} match${list.length>1?"es":""}</span></button><div class="ms">${list.map(x=>`<button class="m ${({A:"wa",T:"t"})[winner(x)]||""}" data-i="${matches.indexOf(x)}"><b>${esc(x.m.teamAName)} v ${esc(x.m.teamBName)}</b><br><small>${scoreLine(x)}</small><br><small class="res">${esc(x.m.resultSummary||(x.m.isCompleted?"Completed":"In progress"))}</small></button>`).join("")}</div></div>`).join(""):'<div class="empty">No matches found.</div>';
+  $("#histList").innerHTML=days.size?[...days].map(([k,list])=>`<div class="day${f||wasOpen.has(k)?" open":""}" data-k="${k}"><button aria-expanded="${!!(f||wasOpen.has(k))}"><span>${new Date(k+"T00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}</span><span style="color:var(--mut)">${list.length} match${list.length>1?"es":""}</span></button><div class="ms">${list.map(x=>`<div class="mw"><button class="m ${({A:"wa",T:"t"})[winner(x)]||""}" data-i="${matches.indexOf(x)}"><b>${esc(x.m.teamAName)} v ${esc(x.m.teamBName)}</b><br><small>${scoreLine(x)}</small><br><small class="res">${esc(x.m.resultSummary||(x.m.isCompleted?"Completed":"In progress"))}</small></button>${isAdmin?`<button class="del" data-d="${matches.indexOf(x)}" aria-label="Delete match">Delete</button>`:""}</div>`).join("")}</div></div>`).join(""):'<div class="empty">No matches found.</div>';
   $$("#histList .day>button").forEach(b=>b.onclick=()=>{const d=b.parentElement;d.classList.toggle("open");b.setAttribute("aria-expanded",d.classList.contains("open"))});
   $$("#histList .m").forEach(b=>b.onclick=()=>{const x=matches[+b.dataset.i];openDialog(x.m.teamAName+" v "+x.m.teamBName,matchHTML(x))});
+  $$("#histList .del").forEach(b=>b.onclick=()=>deleteMatch(matches[+b.dataset.d]));
+}
+
+/* ---------- admin (client-side gate: same root login as the app; Firestore rules are what really allow writes) ---------- */
+const ADMIN_HASH="4813494d137e1631bba301d5acab6e7bb7aa74ce1185d456565ef51d737677b2";
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,"0")).join("");
+let isAdmin=false;try{isAdmin=sessionStorage.getItem("wickt_admin")==="1"}catch(e){}
+function syncAdminUi(){$("#adm").setAttribute("aria-pressed",isAdmin);$("#adm").textContent=isAdmin?"Admin: on (log out)":"Admin";if(matches.length)renderHist()}
+$("#adm").onclick=()=>{
+  if(isAdmin){isAdmin=false;try{sessionStorage.removeItem("wickt_admin")}catch(e){}syncAdminUi();return}
+  openDialog("Admin login",`<div class="fld"><input id="aU" placeholder="Username" autocomplete="username" autocapitalize="off"><input id="aP" type="password" placeholder="Password" autocomplete="current-password"><div class="msg" id="aM" role="alert"></div><button class="btn" id="aGo">Log in</button></div>`);
+  const go=async()=>{
+    const u=$("#aU").value.trim(),p=$("#aP").value;
+    if(await sha(u)===ADMIN_HASH&&await sha(p)===ADMIN_HASH){
+      isAdmin=true;try{sessionStorage.setItem("wickt_admin","1")}catch(e){}
+      $("#dlg").close();syncAdminUi();
+    }else $("#aM").textContent="Wrong username or password.";
+  };
+  $("#aGo").onclick=go;$("#aP").onkeydown=e=>{if(e.key==="Enter")go()};$("#aU").focus();
+};
+async function deleteMatch(x){
+  if(!isAdmin||!x)return;
+  const name=x.m.teamAName+" v "+x.m.teamBName+" ("+new Date(x.m.createdAt).toLocaleString()+")";
+  if(!confirm("Delete "+name+" from the web dashboard?\n\nThis removes it from History, Dashboard and Players for everyone. It cannot be undone."))return;
+  const refs=x.refs||[];
+  try{
+    await Promise.all(refs.map(r=>deleteDoc(doc(db,r.col,r.id))));
+    matches=matches.filter(y=>y!==x);renderHist();renderStats();
+  }catch(e){fail(e)}
 }
 $("#dateF").onchange=renderHist;$("#clr").onclick=()=>{$("#dateF").value="";renderHist()};$("#ref").onclick=load;
 
@@ -384,17 +423,28 @@ function renderStats(){
 }
 function renderRank(P=compute().P){
   const sk=$("#rankSk");if(sk)sk.remove();
-  const q=$("#q").value.trim().toLowerCase(),bat=sortBy==="r";
+  const q=$("#q").value.trim().toLowerCase(),bat=sortBy==="r",all=sortBy==="a";
   const econ=p=>p.bb?p.br/p.bb:99;
+  /* all-rounder index: 1 run = 1 pt, 1 wicket = 20 pts (only players who have both batted and bowled qualify) */
+  const apts=p=>p.r+20*p.w;
+  const bavg=p=>p.dis?(p.r/p.dis).toFixed(1):"-",bsr=p=>p.b?(p.r*100/p.b).toFixed(0):"-";
+  const wavg=p=>p.w?(p.br/p.w).toFixed(1):"-",ec=p=>p.bb?(p.br*6/p.bb).toFixed(1):"-";
   /* [label, value, highlighted] */
-  const cols=bat
-    ?[["Mat",p=>p.mat],["Inns",p=>p.inns],["Runs",p=>p.r,1],["Balls",p=>p.b],["HS",p=>p.hs+(p.hsNo?"*":"")],["Avg",p=>p.dis?(p.r/p.dis).toFixed(1):"-"],["SR",p=>p.b?(p.r*100/p.b).toFixed(0):"-"],["4s",p=>p.f],["6s",p=>p.s]]
-    :[["Mat",p=>p.mat],["Overs",p=>overs(p.bb)],["Runs",p=>p.br],["Wkts",p=>p.w,1],["Best",p=>p.best&&p.best.w?p.best.w+"/"+p.best.r:"-"],["Avg",p=>p.w?(p.br/p.w).toFixed(1):"-"],["Econ",p=>p.bb?(p.br*6/p.bb).toFixed(1):"-"],["SR",p=>p.w?(p.bb/p.w).toFixed(0):"-"]];
-  const rows=P.filter(p=>(bat?p.inns>0:p.bb>0||p.br>0)&&(!q||(p.n+" "+p.t).toLowerCase().includes(q)))
-    .sort(bat?(a,b)=>b.r-a.r||a.b-b.b:(a,b)=>b.w-a.w||econ(a)-econ(b)).slice(0,100);
+  const cols=all
+    ?[["Mat",p=>p.mat],["Runs",p=>p.r],["Wkts",p=>p.w],["Bat Avg",bavg],["SR",bsr],["Bowl Avg",wavg],["Econ",ec],["Pts",apts,1]]
+    :bat
+    ?[["Mat",p=>p.mat],["Inns",p=>p.inns],["Runs",p=>p.r,1],["Balls",p=>p.b],["HS",p=>p.hs+(p.hsNo?"*":"")],["Avg",bavg],["SR",bsr],["4s",p=>p.f],["6s",p=>p.s]]
+    :[["Mat",p=>p.mat],["Overs",p=>overs(p.bb)],["Runs",p=>p.br],["Wkts",p=>p.w,1],["Best",p=>p.best&&p.best.w?p.best.w+"/"+p.best.r:"-"],["Avg",wavg],["Econ",ec],["SR",p=>p.w?(p.bb/p.w).toFixed(0):"-"]];
+  const ok=p=>all?(p.inns>0&&p.bb>0):bat?p.inns>0:(p.bb>0||p.br>0);
+  const rows=P.filter(p=>ok(p)&&(!q||(p.n+" "+p.t).toLowerCase().includes(q)))
+    .sort(all?(a,b)=>apts(b)-apts(a)||b.w-a.w||b.r-a.r:bat?(a,b)=>b.r-a.r||a.b-b.b:(a,b)=>b.w-a.w||econ(a)-econ(b)).slice(0,100);
+  const note=$("#rankNote");
+  note.style.display=all?"block":"none";
+  note.textContent=all?"All-rounders: players who have both batted and bowled. Ranked by Pts = runs + 20 × wickets.":"";
   $("#rankT").dataset.s=sortBy;
   $("#rankT").innerHTML=`<tr><th>#</th><th>Player</th>${cols.map(c=>`<th class="${c[2]?"hl":""}">${c[0]}</th>`).join("")}</tr>`
-    +rows.map((p,i)=>`<tr><td><span class="rk${i===0&&!q?" r1":""}">${i+1}</span></td><td>${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.t)}</small></td>${cols.map(c=>`<td class="${c[2]?"hl":""}">${c[1](p)}</td>`).join("")}</tr>`).join("");
+    +rows.map((p,i)=>`<tr><td><span class="rk${i===0&&!q?" r1":""}">${i+1}</span></td><td>${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.t)}</small></td>${cols.map(c=>`<td class="${c[2]?"hl":""}">${c[1](p)}</td>`).join("")}</tr>`).join("")
+    +(rows.length?"":`<tr><td colspan="${cols.length+2}" class="empty" style="text-align:center">No players found.</td></tr>`);
   window._P=P;
 }
 $("#q").oninput=()=>renderRank(window._P);
@@ -415,13 +465,18 @@ function parse(id,v,ts){
   return r;
 }
 function rebuild(){
-  const seen=new Map(),mg=new Map(),all=[];
-  for(const [id,e] of src.team)all.push({id:"t"+id,...e});
-  for(const [id,e] of src.live)all.push({id:"l"+id,...e});
+  const seen=new Map(),mg=new Map(),all=[],refs=new Map();
+  for(const [id,e] of src.team)all.push({id:"t"+id,col:"team_matches",docId:id,...e});
+  for(const [id,e] of src.live)all.push({id:"l"+id,col:"liveMatches",docId:id,...e});
   all.sort((a,b)=>a.ts-b.ts);
   for(const e of all){
     const p=parse(e.id,e.v,e.ts);if(!p)continue;
     fromPayload(p).forEach(x=>{
+      const mk=x.m.createdAt+"|"+key(x.m.teamAName,x.m.teamBName);
+      if(!refs.has(mk))refs.set(mk,[]);
+      refs.get(mk).push({col:e.col,id:e.docId});
+      /* a live copy also has a summary doc under the same code */
+      if(e.col==="liveMatches")refs.get(mk).push({col:"live_scores",id:e.docId});
       /* a match with no balls yet has nothing to show; never let it replace a scored copy */
       if(!x.balls.length&&seen.has(x.m.createdAt+"|"+key(x.m.teamAName,x.m.teamBName)))return;
       seen.set(x.m.createdAt+"|"+key(x.m.teamAName,x.m.teamBName),x);
@@ -429,6 +484,7 @@ function rebuild(){
     (p.playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m));
   }
   for(const [id,e] of src.squads){const p=parse("s"+id,e.v,e.ts);if(p)(p.playerMerges||[]).forEach(m=>mg.set(key(m.fromName,m.fromTeam),m))}
+  seen.forEach((x,k)=>{x.refs=refs.get(k)||[]});
   matches=[...seen.values()].filter(x=>x.balls.length||x.m.isCompleted);merges=[...mg.values()];
   $$(".sk").forEach(x=>{if(!x.closest("#liveList"))x.remove()});
   renderHist();renderStats();
@@ -453,6 +509,7 @@ function load(){ /* Refresh button: re-run the merge; listeners already deliver 
 listen("team_matches",src.team,["updatedAtMillis","updatedAt"]);
 listen("liveMatches",src.live,["updatedAt"]);
 listen("team_squads",src.squads,["updatedAtMillis","updatedAt"]);
+syncAdminUi();
 </script>
 </body>
 </html>
