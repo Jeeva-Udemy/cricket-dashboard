@@ -175,9 +175,10 @@ main{padding:28px 32px}}
 <section id="dash"><div id="dashBody"><div class="tiles"><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div><div class="sk" style="height:88px"></div></div></div></section>
 <section id="rank">
 <div class="tools"><input type="search" id="q" placeholder="Search player or team" aria-label="Search players">
-<span class="seg"><button data-s="r" aria-pressed="true">Batting</button><button data-s="w" aria-pressed="false">Bowling</button><button data-s="a" aria-pressed="false">All-rounders</button></span></div>
+<span class="seg"><button data-s="r" aria-pressed="true">Batting</button><button data-s="w" aria-pressed="false">Bowling</button><button data-s="a" aria-pressed="false">All-rounders</button><button data-s="p" aria-pressed="false">Best Performance</button></span></div>
 <div id="rankNote" class="mut" style="display:none;color:var(--mut);font-size:13px;margin:0 2px 10px"></div>
-<div class="card scroll"><div class="sk" id="rankSk" style="height:220px"></div><table id="rankT"></table></div></section>
+<div class="grid" id="rankRec" style="margin-bottom:14px"></div>
+<div class="card scroll" id="rankCard"><div class="sk" id="rankSk" style="height:220px"></div><table id="rankT"></table></div></section>
 </main>
 <dialog id="dlg"><div class="dh"><h2 id="dT">Match</h2><button class="x" id="dX" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="db" id="dB"></div></dialog>
 
@@ -363,8 +364,8 @@ function compute(){
   const T=new Map(),H=new Map(),P=new Map();
   const team=n=>{const k=n.trim().toLowerCase();if(!T.has(k))T.set(k,{name:n.trim(),p:0,w:0,l:0,t:0,r:0,k:0,f:0,s:0});return T.get(k)};
   const pl=(n,t)=>{const q=mp.get(key(n,t))||{n,t},k=key(q.n,q.t);if(!P.has(k))P.set(k,{n:String(q.n).trim(),t:q.t,r:0,b:0,f:0,s:0,w:0,bb:0,br:0,m:new Set(),im:new Map(),bms:new Map()});return P.get(k)};
-  const ie=(p,id)=>{let e=p.im.get(id);if(!e){e={r:0,out:false};p.im.set(id,e)}return e};
-  const bmx=(p,mi)=>{let e=p.bms.get(mi);if(!e){e={w:0,r:0};p.bms.set(mi,e)}return e};
+  const ie=(p,id,i,mi)=>{let e=p.im.get(id);if(!e){e={r:0,b:0,out:false,opp:i.bowlingTeam,mi};p.im.set(id,e)}return e};
+  const bmx=(p,mi,i)=>{let e=p.bms.get(mi);if(!e){e={w:0,r:0,bb:0,opp:i.battingTeam};p.bms.set(mi,e)}return e};
   let done=0;
   matches.forEach((x,mi)=>{
     const reg=x.inns.filter(i=>!i.isSuperOver),so=x.inns.filter(i=>i.isSuperOver);
@@ -375,13 +376,13 @@ function compute(){
       const e=b.extraType;if(e==="PENALTY")continue;
       const st=pl(b.strikerName||"Batsman",i.battingTeam),bw=pl(b.bowlerName||"Bowler",i.bowlingTeam);
       st.m.add(mi);bw.m.add(mi);
-      if(e!=="WIDE"){st.b++;ie(st,b.inningsId)}
-      if(e==="NONE"||e==="NO_BALL"){st.r+=b.runsScored;ie(st,b.inningsId).r+=b.runsScored;if(!b.isOverthrow){const t=team(i.battingTeam);if(b.runsScored===4){st.f++;t.f++}if(b.runsScored===6){st.s++;t.s++}}}
-      if(e==="NONE"||e==="NO_BALL"||e==="WIDE"){const c=(b.runsScored||0)+(b.extraRuns||0);bw.br+=c;bmx(bw,mi).r+=c}
-      if(e!=="WIDE"&&e!=="NO_BALL")bw.bb++;
+      if(e!=="WIDE"){st.b++;ie(st,b.inningsId,i,mi).b++}
+      if(e==="NONE"||e==="NO_BALL"){st.r+=b.runsScored;ie(st,b.inningsId,i,mi).r+=b.runsScored;if(!b.isOverthrow){const t=team(i.battingTeam);if(b.runsScored===4){st.f++;t.f++}if(b.runsScored===6){st.s++;t.s++}}}
+      if(e==="NONE"||e==="NO_BALL"||e==="WIDE"){const c=(b.runsScored||0)+(b.extraRuns||0);bw.br+=c;bmx(bw,mi,i).r+=c}
+      if(e!=="WIDE"&&e!=="NO_BALL"){bw.bb++;bmx(bw,mi,i).bb++}
       if(b.isWicket){
-        const o=pl(b.dismissedPlayerName||b.strikerName||"Batsman",i.battingTeam);o.m.add(mi);ie(o,b.inningsId).out=true;
-        if(b.wicketType!=="RUN_OUT"){bw.w++;bmx(bw,mi).w++}
+        const o=pl(b.dismissedPlayerName||b.strikerName||"Batsman",i.battingTeam);o.m.add(mi);ie(o,b.inningsId,i,mi).out=true;
+        if(b.wicketType!=="RUN_OUT"){bw.w++;bmx(bw,mi,i).w++}
       }
     }
     if(!x.m.isCompleted)return;
@@ -397,10 +398,10 @@ function compute(){
       if(h.a.trim().toLowerCase()===(aw?A:Bn).trim().toLowerCase())h.wa++;else h.wb++}
   });
   return {T:[...T.values()],H:[...H.values()],P:[...P.values()].map(p=>{
-    const ins=[...p.im.values()];let hs=0,hsNo=false,best=null;
-    ins.forEach(e=>{if(e.r>hs||(e.r===hs&&!e.out)){hs=e.r;hsNo=!e.out}});
-    p.bms.forEach(e=>{if(!best||e.w>best.w||(e.w===best.w&&e.r<best.r))best=e});
-    return {...p,mat:p.m.size,inns:ins.length,hs,hsNo,dis:ins.filter(e=>e.out).length,best};
+    const ins=[...p.im.values()];let hs=0,hsNo=false,best=null,hsE=null;
+    ins.forEach(e=>{if(e.r>hs||(e.r===hs&&!e.out)){hs=e.r;hsNo=!e.out}if(!hsE||e.r>hsE.r||(e.r===hsE.r&&e.b<hsE.b))hsE=e});
+    p.bms.forEach(e=>{if(e.bb||e.r||e.w){if(!best||e.w>best.w||(e.w===best.w&&e.r<best.r))best=e}});
+    return {...p,mat:p.m.size,inns:ins.length,hs,hsNo,hsE,dis:ins.filter(e=>e.out).length,best};
   }),done};
 }
 const bars=(rows,c="var(--acc)")=>{const mx=Math.max(1,...rows.map(r=>r.v));return rows.map(r=>`<div class="bar"><span title="${esc(r.l)}">${esc(r.l)}</span><i style="width:${r.v/mx*100}%;--c:${c}"></i><b>${r.v}</b></div>`).join("")||'<div class="empty">No data yet.</div>'};
@@ -423,7 +424,7 @@ function renderStats(){
 }
 function renderRank(P=compute().P){
   const sk=$("#rankSk");if(sk)sk.remove();
-  const q=$("#q").value.trim().toLowerCase(),bat=sortBy==="r",all=sortBy==="a";
+  const q=$("#q").value.trim().toLowerCase(),bat=sortBy==="r",all=sortBy==="a",perf=sortBy==="p";
   const econ=p=>p.bb?p.br/p.bb:99;
   /* all-rounder index: 1 run = 1 pt, 1 wicket = 20 pts (only players who have both batted and bowled qualify) */
   const apts=p=>p.r+20*p.w;
@@ -438,9 +439,22 @@ function renderRank(P=compute().P){
   const ok=p=>all?(p.inns>0&&p.bb>0):bat?p.inns>0:(p.bb>0||p.br>0);
   const rows=P.filter(p=>ok(p)&&(!q||(p.n+" "+p.t).toLowerCase().includes(q)))
     .sort(all?(a,b)=>apts(b)-apts(a)||b.w-a.w||b.r-a.r:bat?(a,b)=>b.r-a.r||a.b-b.b:(a,b)=>b.w-a.w||econ(a)-econ(b)).slice(0,100);
+  /* team records: highest individual score / best spell for every team (not affected by search) */
+  const tk=t=>String(t).trim().toLowerCase(),TM=new Map();
+  P.forEach(p=>{const k=tk(p.t);if(!TM.has(k))TM.set(k,{name:String(p.t).trim(),hs:null,bs:null});const r=TM.get(k);
+    if(p.hsE&&p.inns>0&&(!r.hs||p.hsE.r>r.hs.e.r||(p.hsE.r===r.hs.e.r&&p.hsE.b<r.hs.e.b)))r.hs={p,e:p.hsE};
+    if(p.best&&p.best.bb>0&&(!r.bs||p.best.w>r.bs.e.w||(p.best.w===r.bs.e.w&&p.best.r<r.bs.e.r)))r.bs={p,e:p.best}});
+  const tms=[...TM.values()].sort((a,b)=>a.name.localeCompare(b.name));
+  const recRow=(t,x,txt)=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line);align-items:center"><span><b>${esc(t.name)}</b><br><small style="color:var(--mut)">${x?esc(x.p.n)+" · vs "+esc(x.e.opp):"-"}</small></span><span class="num" style="font-size:26px;color:var(--acc)">${x?txt(x.e):"-"}</span></div>`;
+  const hsCard=`<div class="card"><h3>Highest individual score</h3>${tms.map(t=>recRow(t,t.hs,e=>e.r+(e.out?"":"*")+' <small style="font:700 14px Lato;color:var(--mut)">('+e.b+'b)</small>')).join("")||'<div class="empty">No data yet.</div>'}</div>`;
+  const bsCard=`<div class="card"><h3>Best bowling spell</h3>${tms.map(t=>recRow(t,t.bs,e=>e.w+"/"+e.r+' <small style="font:700 14px Lato;color:var(--mut)">('+overs(e.bb)+' ov)</small>')).join("")||'<div class="empty">No data yet.</div>'}</div>`;
+  $("#rankRec").innerHTML=perf?hsCard+bsCard:"";
+  $("#rankCard").style.display=perf?"none":"";
+  $("#rankRec").style.display=perf?"":"none";
   const note=$("#rankNote");
-  note.style.display=all?"block":"none";
-  note.textContent=all?"All-rounders: players who have both batted and bowled. Ranked by Pts = runs + 20 × wickets.":"";
+  note.style.display=all||perf?"block":"none";
+  note.textContent=all?"All-rounders: players who have both batted and bowled. Ranked by Pts = runs + 20 × wickets.":perf?"Best single-match performances for each team: highest individual score and best bowling spell.":"";
+  $("#q").style.display=perf?"none":"";
   $("#rankT").dataset.s=sortBy;
   $("#rankT").innerHTML=`<tr><th>#</th><th>Player</th>${cols.map(c=>`<th class="${c[2]?"hl":""}">${c[0]}</th>`).join("")}</tr>`
     +rows.map((p,i)=>`<tr><td><span class="rk${i===0&&!q?" r1":""}">${i+1}</span></td><td>${esc(p.n)}<br><small style="color:var(--mut)">${esc(p.t)}</small></td>${cols.map(c=>`<td class="${c[2]?"hl":""}">${c[1](p)}</td>`).join("")}</tr>`).join("")
